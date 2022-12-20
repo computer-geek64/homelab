@@ -1,0 +1,22 @@
+- name: Unbound dependencies
+  hosts: localhost
+  tasks:
+  - name: Pull ubuntu docker image
+    community.docker.docker_image:
+      name: 'docker.io/library/ubuntu'
+      tag: latest
+      source: pull
+      force_source: true
+      state: present
+
+- name: Unbound setup
+  hosts: localhost
+  tasks:
+  - name: Build unbound docker image
+    ansible.builtin.docker_image:
+      name: unbound
+      build:
+        path: .
+      source: build
+      force_source: true
+      state: present

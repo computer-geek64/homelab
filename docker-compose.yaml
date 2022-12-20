@@ -1,0 +1,111 @@
+version: '3'
+
+services:
+  postgres:
+    container_name: homelab-postgres
+    image: postgres:latest
+    restart: unless-stopped
+    volumes:
+    - type: volume
+      source: postgres-data
+      target: /var/lib/postgresql/data
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+    networks:
+    - homelab
+    ports:
+    - 5432:5432
+  gitea:
+    container_name: homelab-gitea
+    image: gitea/gitea:latest
+    depends_on:
+    - postgres
+    restart: unless-stopped
+    #environment:
+    #  GITEA__server__DOMAIN: gitea.homelab.net
+    #  GITEA__server__ROOT_URL: https://gitea.homelab.net/
+    #  GITEA__server__LANDING_PAGE: /
+    volumes:
+    - type: volume
+      source: gitea-data
+      target: /data
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+    networks:
+    - homelab
+    ports:
+    - 3000:3000
+  jenkins:
+    container_name: homelab-jenkins
+    image: jenkins/jenkins:latest
+    restart: unless-stopped
+    volumes:
+    - type: volume
+      source: jenkins-data
+      target: /var/jenkins_home
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+    networks:
+    - homelab
+    ports:
+    - 8080:8080
+  planka:
+    container_name: homelab-planka
+    image: ghcr.io/plankanban/planka:latest
+    depends_on:
+    - postgres
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://planka:${PLANKA_POSTGRES_PASSWORD}@postgres/planka
+      NODE_ENV: production
+      SECRET_KEY: ${PLANKA_SECRET_KEY}
+    volumes:
+    - type: volume
+      source: planka-data
+      target: /app
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+    networks:
+    - homelab
+    ports:
+    - 1337:1337
+  unbound:
+    container_name: homelab-unbound
+    image: unbound:latest
+    depends_on:
+    - postgres
+    restart: unless-stopped
+    environment:
+      DNS_POSTGRES_PASSWORD: ${DNS_POSTGRES_PASSWORD}
+    volumes:
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+    network_mode: host
+
+volumes:
+  postgres-data:
+    name: homelab-postgres-data
+    external: true
+  gitea-data:
+    name: homelab-gitea-data
+    external: true
+  jenkins-data:
+    name: homelab-jenkins-data
+    external: true
+  planka-data:
+    name: homelab-planka-data
+    external: true
+
+networks:
+  homelab:
+    name: homelab

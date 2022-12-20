@@ -1,0 +1,7 @@
+- name: Uninstall gitea
+  hosts: localhost
+  tasks:
+  - name: Remove gitea docker volume
+    ansible.builtin.docker_volume:
+      volume_name: homelab-gitea-data
+      state: absent

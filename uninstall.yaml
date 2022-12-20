@@ -1,0 +1,12 @@
+- name: Uninstall
+  hosts: localhost
+  tasks:
+  - name: Docker compose down
+    ansible.builtin.docker_compose:
+      project_src: .
+      state: absent
+
+- ansible.builtin.import_playbook: jenkins/uninstall.yaml
+- ansible.builtin.import_playbook: gitea/uninstall.yaml
+- ansible.builtin.import_playbook: planka/uninstall.yaml
+- ansible.builtin.import_playbook: postgres/uninstall.yaml

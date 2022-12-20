@@ -1,0 +1,7 @@
+- name: Uninstall postgres
+  hosts: localhost
+  tasks:
+  - name: Remove postgres docker volume
+    ansible.builtin.docker_volume:
+      volume_name: homelab-postgres-data
+      state: absent

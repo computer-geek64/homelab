@@ -1,0 +1,8 @@
+{
+    "postgres_password": "",
+    "homelab_postgres_password": "",
+    "gitea_postgres_password": "",
+    "planka_postgres_password": "",
+    "planka_secret_key": "",
+    "dns_postgres_password": ""
+}

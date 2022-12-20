@@ -1,0 +1,16 @@
+- name: Start homelab
+  hosts: localhost
+  tasks:
+  - name: Load JSON config
+    ansible.builtin.include_vars:
+      name: config
+      file: config.json
+  - name: docker-compose up
+    environment:
+      PLANKA_POSTGRES_PASSWORD: '{{config.planka_postgres_password}}'
+      PLANKA_SECRET_KEY: '{{config.planka_secret_key}}'
+      DNS_POSTGRES_PASSWORD: '{{config.dns_postgres_password}}'
+    ansible.builtin.docker_compose:
+      project_name: homelab
+      project_src: .
+      state: present

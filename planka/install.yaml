@@ -1,0 +1,64 @@
+- name: Planka database
+  hosts: localhost
+  tasks:
+  - name: Create planka postgres user
+    ansible.builtin.postgresql_user:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{config.postgres_password}}'
+      login_db: postgres
+      name: planka
+      password: '{{config.planka_postgres_password}}'
+      state: present
+  - name: Create planka postgres db
+    ansible.builtin.postgresql_db:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{config.postgres_password}}'
+      maintenance_db: postgres
+      name: planka
+      owner: planka
+      state: present
+
+- name: Planka docker
+  hosts: localhost
+  tasks:
+  - name: Create planka docker volume
+    ansible.builtin.docker_volume:
+      volume_name: homelab-planka-data
+      state: present
+  - name: Start planka docker container
+    ansible.builtin.docker_container:
+      name: homelab-planka-bootstrap
+      image: ghcr.io/plankanban/planka:latest
+      pull: true
+      network_mode: host
+      etc_hosts:
+        postgres: 127.0.0.1
+      env:
+        #BASE_URL: https://planka.homelab.net/
+        #TRUST_PROXY: 1
+        DATABASE_URL: 'postgresql://planka:{{config.planka_postgres_password}}@postgres/planka'
+        NODE_ENV: production
+        SECRET_KEY: '{{config.planka_secret_key}}'
+      volumes:
+      - homelab-planka-data:/app
+      - /etc/localtime:/etc/localtime:ro
+      auto_remove: true
+      keep_volumes: false
+      state: started
+  - name: Wait for planka docker container
+    ansible.builtin.wait_for:
+      port: 1337
+      state: started
+  - name: Wait for confirmation
+    ansible.builtin.pause:
+      prompt: Go to http://localhost:1337/ and finish Planka setup
+
+- name: Planka install cleanup
+  hosts: localhost
+  tasks:
+  - name: Stop planka container
+    ansible.builtin.docker_container:
+      name: homelab-planka-bootstrap
+      state: absent

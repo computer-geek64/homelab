@@ -1,0 +1,7 @@
+- name: Postgres install cleanup
+  hosts: localhost
+  tasks:
+  - name: Stop postgres container
+    ansible.builtin.docker_container:
+      name: homelab-postgres-bootstrap
+      state: absent

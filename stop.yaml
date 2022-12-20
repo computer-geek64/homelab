@@ -1,0 +1,8 @@
+- name: Stop homelab
+  hosts: localhost
+  tasks:
+  - name: docker-compose down
+    ansible.builtin.docker_compose:
+      project_name: homelab
+      project_src: .
+      state: absent

@@ -1,0 +1,29 @@
+- name: Load configuration
+  hosts: localhost
+  tasks:
+  - name: Load JSON config
+    ansible.builtin.include_vars:
+      name: config
+      file: config.json
+
+- name: Get sources
+  hosts: localhost
+  tasks:
+  - name: Clone git repo
+    ansible.builtin.git:
+      repo: https://github.com/computer-geek64/homelab
+      dest: /home/ashish/tmp/homelab
+      update: true
+      version: master
+
+- ansible.builtin.import_playbook: postgres/install.yaml
+
+- ansible.builtin.import_playbook: gitea/install.yaml
+
+- ansible.builtin.import_playbook: planka/install.yaml
+
+- ansible.builtin.import_playbook: postgres/install_cleanup.yaml
+
+- ansible.builtin.import_playbook: jenkins/install.yaml
+
+- ansible.builtin.import_playbook: unbound/install.yaml
