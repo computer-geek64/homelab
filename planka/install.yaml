@@ -37,7 +37,7 @@
       published_ports:
       - 8006:1337
       env:
-        BASE_URL: http://localhost:8006
+        BASE_URL: https://planka.homelab.net
         #TRUST_PROXY: 1
         DATABASE_URL: 'postgresql://planka:{{config.planka_postgres_password}}@postgres/planka'
         NODE_ENV: production
@@ -54,7 +54,7 @@
       state: started
   - name: Wait for confirmation
     ansible.builtin.pause:
-      prompt: Go to http://localhost:8006/ and finish Planka setup
+      prompt: Go to https://planka.homelab.net and finish Planka setup
 
 - name: Planka install cleanup
   hosts: localhost

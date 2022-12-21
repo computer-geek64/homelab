@@ -34,7 +34,7 @@
       msg: 'Jenkins initial admin password: {{jenkins_initial_admin_password.stdout}}'
   - name: Wait for confirmation
     ansible.builtin.pause:
-      prompt: Go to http://localhost:8003/ and finish Jenkins setup
+      prompt: Go to https://jenkins.homelab.net and finish Jenkins setup
 
 - name: Jenkins install cleanup
   hosts: localhost

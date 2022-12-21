@@ -24,7 +24,7 @@
       state: started
   - name: Wait for confirmation
     ansible.builtin.pause:
-      prompt: Go to http://localhost:8004/ and finish Uptime Kuma setup
+      prompt: Go to https://uptime-kuma.homelab.net and finish Uptime Kuma setup
 
 - name: Uptime kuma install cleanup
   hosts: localhost

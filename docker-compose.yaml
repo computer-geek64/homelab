@@ -62,7 +62,7 @@ services:
     - postgres
     restart: unless-stopped
     environment:
-      BASE_URL: http://localhost:8006
+      BASE_URL: https://planka.homelab.net
       DATABASE_URL: postgresql://planka:${PLANKA_POSTGRES_PASSWORD}@postgres/planka
       NODE_ENV: production
       SECRET_KEY: ${PLANKA_SECRET_KEY}

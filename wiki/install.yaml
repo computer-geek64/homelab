@@ -50,7 +50,7 @@
       state: started
   - name: Wait for confirmation
     ansible.builtin.pause:
-      prompt: Go to https://wiki.homelab.net/ and finish Wiki setup
+      prompt: Go to https://wiki.homelab.net and finish Wiki setup
 
 - name: Wiki install cleanup
   hosts: localhost

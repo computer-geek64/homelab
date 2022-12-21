@@ -59,7 +59,7 @@
       state: started
   - name: Wait for confirmation
     ansible.builtin.pause:
-      prompt: Go to http://localhost:8002/ and finish Gitea setup
+      prompt: Go to https://gitea.homelab.net and finish Gitea setup
 
 - name: Gitea install cleanup
   hosts: localhost
