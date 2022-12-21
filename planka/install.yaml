@@ -38,7 +38,6 @@
       - 8006:1337
       env:
         BASE_URL: https://planka.homelab.net
-        #TRUST_PROXY: 1
         DATABASE_URL: 'postgresql://planka:{{config.planka_postgres_password}}@postgres/planka'
         NODE_ENV: production
         SECRET_KEY: '{{config.planka_secret_key}}'

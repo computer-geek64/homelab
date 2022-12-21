@@ -55,6 +55,42 @@ services:
     - homelab
     ports:
     - 8003:8080
+  uptime-kuma:
+    container_name: homelab-uptime-kuma
+    image: louislam/uptime-kuma:latest
+    restart: unless-stopped
+    volumes:
+    - type: volume
+      source: uptime-kuma-data
+      target: /app/data
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+    networks:
+    - homelab
+    ports:
+    - 8004:3001
+  wiki:
+    container_name: homelab-wiki
+    image: requarks/wiki
+    restart: unless-stopped
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: wiki
+      DB_PASS: ${WIKI_POSTGRES_PASSWORD}
+      DB_NAME: wiki
+    volumes:
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+    networks:
+    - homelab
+    ports:
+    - 8005:3000
   planka:
     container_name: homelab-planka
     image: ghcr.io/plankanban/planka:latest
@@ -78,22 +114,6 @@ services:
     - homelab
     ports:
     - 8006:1337
-  uptime-kuma:
-    container_name: homelab-uptime-kuma
-    image: louislam/uptime-kuma:latest
-    restart: unless-stopped
-    volumes:
-    - type: volume
-      source: uptime-kuma-data
-      target: /app/data
-    - type: bind
-      source: /etc/localtime
-      target: /etc/localtime
-      read_only: true
-    networks:
-    - homelab
-    ports:
-    - 8004:3001
   unbound:
     container_name: homelab-unbound
     image: unbound:latest

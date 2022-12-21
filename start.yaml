@@ -7,6 +7,7 @@
       file: config.json
   - name: docker-compose up
     environment:
+      WIKI_POSTGRES_PASSWORD: '{{config.wiki_postgres_password}}'
       PLANKA_POSTGRES_PASSWORD: '{{config.planka_postgres_password}}'
       PLANKA_SECRET_KEY: '{{config.planka_secret_key}}'
       DNS_POSTGRES_PASSWORD: '{{config.dns_postgres_password}}'
