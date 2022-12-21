@@ -1,0 +1,9 @@
+- name: Remove docker volume bind mount directory
+  become: true
+  ansible.builtin.file:
+    path: '{{config.docker_volumes_dir}}/{{volume_name}}'
+    state: absent
+- name: Remove docker volume
+  community.docker.docker_volume:
+    volume_name: '{{volume_name}}'
+    state: absent

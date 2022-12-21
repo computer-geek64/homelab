@@ -25,7 +25,7 @@ services:
     restart: unless-stopped
     #environment:
     #  GITEA__server__DOMAIN: gitea.homelab.net
-    #  GITEA__server__ROOT_URL: https://gitea.homelab.net/
+    #  GITEA__server__ROOT_URL: https://gitea.homelab.net
     #  GITEA__server__LANDING_PAGE: /
     volumes:
     - type: volume
@@ -38,7 +38,7 @@ services:
     networks:
     - homelab
     ports:
-    - 3000:3000
+    - 8002:8002
   jenkins:
     container_name: homelab-jenkins
     image: jenkins/jenkins:latest
@@ -54,7 +54,7 @@ services:
     networks:
     - homelab
     ports:
-    - 8080:8080
+    - 8003:8080
   planka:
     container_name: homelab-planka
     image: ghcr.io/plankanban/planka:latest
@@ -62,6 +62,7 @@ services:
     - postgres
     restart: unless-stopped
     environment:
+      BASE_URL: http://localhost:8006
       DATABASE_URL: postgresql://planka:${PLANKA_POSTGRES_PASSWORD}@postgres/planka
       NODE_ENV: production
       SECRET_KEY: ${PLANKA_SECRET_KEY}
@@ -76,7 +77,23 @@ services:
     networks:
     - homelab
     ports:
-    - 1337:1337
+    - 8006:1337
+  uptime-kuma:
+    container_name: homelab-uptime-kuma
+    image: louislam/uptime-kuma:latest
+    restart: unless-stopped
+    volumes:
+    - type: volume
+      source: uptime-kuma-data
+      target: /app/data
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+    networks:
+    - homelab
+    ports:
+    - 8004:3001
   unbound:
     container_name: homelab-unbound
     image: unbound:latest
@@ -104,6 +121,9 @@ volumes:
     external: true
   planka-data:
     name: homelab-planka-data
+    external: true
+  uptime-kuma-data:
+    name: homelab-uptime-kuma-data
     external: true
 
 networks:

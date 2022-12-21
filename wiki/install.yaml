@@ -1,0 +1,61 @@
+- name: Wiki database
+  hosts: localhost
+  tasks:
+  - name: Create wiki postgres user
+    community.postgresql.postgresql_user:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{config.postgres_password}}'
+      login_db: postgres
+      name: wiki
+      password: '{{config.wiki_postgres_password}}'
+      state: present
+  - name: Create wiki postgres db
+    community.postgresql.postgresql_db:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{config.postgres_password}}'
+      maintenance_db: postgres
+      name: wiki
+      owner: wiki
+      state: present
+
+- name: Wiki docker
+  hosts: localhost
+  tasks:
+  - name: Start wiki docker container
+    community.docker.docker_container:
+      name: homelab-wiki-bootstrap
+      image: requarks/wiki:latest
+      pull: true
+      networks:
+      - name: homelab-postgres-bootstrap
+      published_ports:
+      - 8005:3000
+      env:
+        DB_TYPE: postgres
+        DB_HOST: postgres
+        DB_PORT: '5432'
+        DB_USER: wiki
+        DB_PASS: '{{config.wiki_postgres_password}}'
+        DB_NAME: wiki
+      volumes:
+      - /etc/localtime:/etc/localtime:ro
+      auto_remove: true
+      keep_volumes: false
+      state: started
+  - name: Wait for wiki to come online
+    ansible.builtin.wait_for:
+      port: 8005
+      state: started
+  - name: Wait for confirmation
+    ansible.builtin.pause:
+      prompt: Go to https://wiki.homelab.net/ and finish Wiki setup
+
+- name: Wiki install cleanup
+  hosts: localhost
+  tasks:
+  - name: Stop wiki container
+    community.docker.docker_container:
+      name: homelab-wiki-bootstrap
+      state: absent

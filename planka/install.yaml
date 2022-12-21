@@ -2,7 +2,7 @@
   hosts: localhost
   tasks:
   - name: Create planka postgres user
-    ansible.builtin.postgresql_user:
+    community.postgresql.postgresql_user:
       login_host: localhost
       login_user: postgres
       login_password: '{{config.postgres_password}}'
@@ -11,7 +11,7 @@
       password: '{{config.planka_postgres_password}}'
       state: present
   - name: Create planka postgres db
-    ansible.builtin.postgresql_db:
+    community.postgresql.postgresql_db:
       login_host: localhost
       login_user: postgres
       login_password: '{{config.postgres_password}}'
@@ -24,19 +24,20 @@
   hosts: localhost
   tasks:
   - name: Create planka docker volume
-    ansible.builtin.docker_volume:
+    vars:
       volume_name: homelab-planka-data
-      state: present
+    ansible.builtin.import_tasks: ../util/create_docker_volume.yaml
   - name: Start planka docker container
-    ansible.builtin.docker_container:
+    community.docker.docker_container:
       name: homelab-planka-bootstrap
       image: ghcr.io/plankanban/planka:latest
       pull: true
-      network_mode: host
-      etc_hosts:
-        postgres: 127.0.0.1
+      networks:
+      - name: homelab-postgres-bootstrap
+      published_ports:
+      - 8006:1337
       env:
-        #BASE_URL: https://planka.homelab.net/
+        BASE_URL: http://localhost:8006
         #TRUST_PROXY: 1
         DATABASE_URL: 'postgresql://planka:{{config.planka_postgres_password}}@postgres/planka'
         NODE_ENV: production
@@ -47,18 +48,18 @@
       auto_remove: true
       keep_volumes: false
       state: started
-  - name: Wait for planka docker container
+  - name: Wait for planka to come online
     ansible.builtin.wait_for:
-      port: 1337
+      port: 8006
       state: started
   - name: Wait for confirmation
     ansible.builtin.pause:
-      prompt: Go to http://localhost:1337/ and finish Planka setup
+      prompt: Go to http://localhost:8006/ and finish Planka setup
 
 - name: Planka install cleanup
   hosts: localhost
   tasks:
   - name: Stop planka container
-    ansible.builtin.docker_container:
+    community.docker.docker_container:
       name: homelab-planka-bootstrap
       state: absent

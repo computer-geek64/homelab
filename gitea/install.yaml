@@ -2,7 +2,7 @@
   hosts: localhost
   tasks:
   - name: Create gitea postgres user
-    ansible.builtin.postgresql_user:
+    community.postgresql.postgresql_user:
       login_host: localhost
       login_user: postgres
       login_password: '{{config.postgres_password}}'
@@ -11,7 +11,7 @@
       password: '{{config.gitea_postgres_password}}'
       state: present
   - name: Create gitea postgres db
-    ansible.builtin.postgresql_db:
+    community.postgresql.postgresql_db:
       login_host: localhost
       login_user: postgres
       login_password: '{{config.postgres_password}}'
@@ -24,25 +24,26 @@
   hosts: localhost
   tasks:
   - name: Create gitea docker volume
-    ansible.builtin.docker_volume:
+    vars:
       volume_name: homelab-gitea-data
-      state: present
+    ansible.builtin.import_tasks: ../util/create_docker_volume.yaml
   - name: Start gitea docker container
-    ansible.builtin.docker_container:
+    community.docker.docker_container:
       name: homelab-gitea-bootstrap
       image: gitea/gitea:latest
       pull: true
-      network_mode: host
-      etc_hosts:
-        postgres: 127.0.0.1
+      networks:
+      - name: homelab-postgres-bootstrap
+      published_ports:
+      - 8002:8002
       env:
         GITEA__database__DB_TYPE: postgres
         GITEA__database__HOST: postgres
         GITEA__database__NAME: gitea
         GITEA__database__USER: gitea
         GITEA__database__PASSWD: '{{config.gitea_postgres_password}}'
-        GITEA__server__HTTP_PORT: '3000'
-        GITEA__server__ROOT_URL: https://gitea.homelab.net/
+        GITEA__server__HTTP_PORT: '8002'
+        GITEA__server__ROOT_URL: https://gitea.homelab.net
         GITEA__server__OFFLINE_MODE: 'true'
         GITEA__server__DISABLE_SSH: 'true'
         APP_NAME: Gitea
@@ -52,14 +53,18 @@
       auto_remove: true
       keep_volumes: false
       state: started
+  - name: Wait for gitea to come online
+    ansible.builtin.wait_for:
+      port: 8002
+      state: started
   - name: Wait for confirmation
     ansible.builtin.pause:
-      prompt: Go to http://localhost:3000/ and finish Gitea setup
+      prompt: Go to http://localhost:8002/ and finish Gitea setup
 
 - name: Gitea install cleanup
   hosts: localhost
   tasks:
   - name: Stop gitea container
-    ansible.builtin.docker_container:
+    community.docker.docker_container:
       name: homelab-gitea-bootstrap
       state: absent

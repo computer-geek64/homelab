@@ -18,12 +18,18 @@
 
 - ansible.builtin.import_playbook: postgres/install.yaml
 
+- ansible.builtin.import_playbook: unbound/install.yaml
+
 - ansible.builtin.import_playbook: gitea/install.yaml
 
 - ansible.builtin.import_playbook: planka/install.yaml
+
+- ansible.builtin.import_playbook: wiki/install.yaml
 
 - ansible.builtin.import_playbook: postgres/install_cleanup.yaml
 
 - ansible.builtin.import_playbook: jenkins/install.yaml
 
-- ansible.builtin.import_playbook: unbound/install.yaml
+- ansible.builtin.import_playbook: uptime_kuma/install.yaml
+
+- ansible.builtin.import_playbook: unbound/install_cleanup.yaml

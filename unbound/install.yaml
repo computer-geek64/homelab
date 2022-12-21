@@ -13,10 +13,29 @@
   hosts: localhost
   tasks:
   - name: Build unbound docker image
-    ansible.builtin.docker_image:
+    community.docker.docker_image:
       name: unbound
       build:
         path: .
       source: build
       force_source: true
       state: present
+  - name: Start unbound docker container
+    community.docker.docker_container:
+      name: homelab-unbound-bootstrap
+      image: unbound:latest
+      network_mode: host
+      env:
+        DNS_POSTGRES_PASSWORD: '{{config.dns_postgres_password}}'
+      volumes:
+      - /etc/localtime:/etc/localtime:ro
+      auto_remove: true
+      keep_volumes: false
+      state: started
+  - name: Wait for unbound to come online
+    ansible.builtin.wait_for:
+      port: 53
+      state: started
+  - name: Wait for confirmation
+    ansible.builtin.pause:
+      prompt: Change DNS resolver on client machine to point to this host

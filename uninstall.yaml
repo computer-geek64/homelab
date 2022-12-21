@@ -1,12 +1,17 @@
-- name: Uninstall
+- name: Load configuration
   hosts: localhost
   tasks:
-  - name: Docker compose down
-    ansible.builtin.docker_compose:
-      project_src: .
-      state: absent
+  - name: Load JSON config
+    ansible.builtin.include_vars:
+      name: config
+      file: config.json
+
+- ansible.builtin.import_playbook: uptime_kuma/uninstall.yaml
 
 - ansible.builtin.import_playbook: jenkins/uninstall.yaml
-- ansible.builtin.import_playbook: gitea/uninstall.yaml
+
 - ansible.builtin.import_playbook: planka/uninstall.yaml
+
+- ansible.builtin.import_playbook: gitea/uninstall.yaml
+
 - ansible.builtin.import_playbook: postgres/uninstall.yaml

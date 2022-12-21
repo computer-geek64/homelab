@@ -2,6 +2,9 @@
   hosts: localhost
   tasks:
   - name: Stop postgres container
-    ansible.builtin.docker_container:
+    community.docker.docker_container:
       name: homelab-postgres-bootstrap
       state: absent
+  - name: Remove postgres network
+    community.docker.docker_network:
+      name: homelab-postgres-bootstrap

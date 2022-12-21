@@ -1,0 +1,7 @@
+- name: Unbound install cleanup
+  hosts: localhost
+  tasks:
+  - name: Stop unbound container
+    community.docker.docker_container:
+      name: homelab-unbound-bootstrap
+      state: absent

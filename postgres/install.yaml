@@ -2,15 +2,24 @@
   hosts: localhost
   tasks:
   - name: Create postgres docker volume
-    ansible.builtin.docker_volume:
+    vars:
       volume_name: homelab-postgres-data
+    ansible.builtin.import_tasks: ../util/create_docker_volume.yaml
+  - name: Create postgres docker network
+    community.docker.docker_network:
+      name: homelab-postgres-bootstrap
       state: present
   - name: Start postgres docker container
-    ansible.builtin.docker_container:
+    community.docker.docker_container:
       name: homelab-postgres-bootstrap
       image: postgres:latest
       pull: true
-      network_mode: host
+      networks:
+      - name: homelab-postgres-bootstrap
+        aliases:
+        - postgres
+      published_ports:
+      - 5432:5432
       env:
         POSTGRES_DB: postgres
         POSTGRES_USER: postgres
@@ -21,7 +30,7 @@
       auto_remove: true
       keep_volumes: false
       state: started
-  - name: Wait for postgres docker container
+  - name: Wait for postgres to come online
     ansible.builtin.wait_for:
       host: localhost
       port: 5432
@@ -31,7 +40,7 @@
   hosts: localhost
   tasks:
   - name: Create homelab user
-    ansible.builtin.postgresql_user:
+    community.postgresql.postgresql_user:
       login_host: localhost
       login_user: postgres
       login_password: '{{config.postgres_password}}'
@@ -40,7 +49,7 @@
       password: '{{config.homelab_postgres_password}}'
       state: present
   - name: Create homelab db
-    ansible.builtin.postgresql_db:
+    community.postgresql.postgresql_db:
       login_host: localhost
       login_user: postgres
       login_password: '{{config.postgres_password}}'
@@ -49,7 +58,7 @@
       owner: homelab
       state: present
   - name: Create hosts table
-    ansible.builtin.postgresql_table:
+    community.postgresql.postgresql_table:
       login_host: localhost
       login_user: homelab
       login_password: '{{config.homelab_postgres_password}}'
@@ -58,11 +67,14 @@
       columns:
       - hostname VARCHAR PRIMARY KEY
       - ip VARCHAR UNIQUE  # No NOT NULL constraint because of client devices (DHCP/non-static IP)
+      - mac CHAR(17) UNIQUE
+      - alias VARCHAR UNIQUE
+      - description VARCHAR
       - location VARCHAR
       owner: homelab
       state: present
   - name: Create services table
-    ansible.builtin.postgresql_table:
+    community.postgresql.postgresql_table:
       login_host: localhost
       login_user: homelab
       login_password: '{{config.homelab_postgres_password}}'
@@ -70,27 +82,50 @@
       table: services
       columns:
       - name VARCHAR PRIMARY KEY
-      - host VARCHAR NOT NULL REFERENCES hosts (hostname)
+      - host VARCHAR NOT NULL REFERENCES hosts (hostname) ON UPDATE CASCADE ON DELETE CASCADE
+      owner: homelab
+      state: present
+  - name: Create domains table
+    community.postgresql.postgresql_table:
+      login_host: localhost
+      login_user: homelab
+      login_password: '{{config.homelab_postgres_password}}'
+      db: homelab
+      table: domains
+      columns:
+      - name VARCHAR PRIMARY KEY
+      - host VARCHAR NOT NULL REFERENCES hosts (hostname) ON UPDATE CASCADE ON DELETE CASCADE
+      owner: homelab
+      state: present
+  - name: Create protocols table
+    community.postgresql.postgresql_table:
+      login_host: localhost
+      login_user: homelab
+      login_password: '{{config.homelab_postgres_password}}'
+      db: homelab
+      table: protocols
+      columns:
+      - name VARCHAR PRIMARY KEY
+      - default_port INTEGER
       owner: homelab
       state: present
   - name: Create connections table
-    ansible.builtin.postgresql_table:
+    community.postgresql.postgresql_table:
       login_host: localhost
       login_user: homelab
       login_password: '{{config.homelab_postgres_password}}'
       db: homelab
       table: connections
       columns:
-      - host VARCHAR
+      - domain VARCHAR REFERENCES domains (name) ON UPDATE CASCADE
       - port INTEGER
-      - protocol VARCHAR NOT NULL
-      - service VARCHAR NOT NULL REFERENCES services (name)
-      - cname VARCHAR UNIQUE
-      - PRIMARY KEY (host, port)
+      - protocol VARCHAR NOT NULL REFERENCES protocols (name) ON UPDATE CASCADE
+      - service VARCHAR NOT NULL REFERENCES services (name) ON UPDATE CASCADE ON DELETE CASCADE
+      - PRIMARY KEY (domain, port)
       owner: homelab
       state: present
   - name: Create wireguard schema
-    ansible.builtin.postgresql_schema:
+    community.postgresql.postgresql_schema:
       login_host: localhost
       login_user: homelab
       login_password: '{{config.homelab_postgres_password}}'
@@ -99,14 +134,14 @@
       owner: homelab
       state: present
   - name: Create wireguard.hosts table
-    ansible.builtin.postgresql_table:
+    community.postgresql.postgresql_table:
       login_host: localhost
       login_user: homelab
       login_password: '{{config.homelab_postgres_password}}'
       db: homelab
       table: wireguard.hosts
       columns:
-      - hostname VARCHAR PRIMARY KEY REFERENCES hosts (hostname)
+      - hostname VARCHAR PRIMARY KEY REFERENCES hosts (hostname) ON UPDATE CASCADE ON DELETE CASCADE
       - ip VARCHAR NOT NULL UNIQUE
       - privatekey VARCHAR NOT NULL
       - publickey VARCHAR NOT NULL
@@ -114,20 +149,20 @@
       owner: homelab
       state: present
   - name: Insert rows into hosts table
-    ansible.builtin.postgresql_query:
+    community.postgresql.postgresql_query:
       login_host: localhost
       login_user: homelab
       login_password: '{{config.homelab_postgres_password}}'
       db: homelab
-      query: 'INSERT INTO hosts (hostname, ip, location) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;'
+      query: 'INSERT INTO hosts (hostname, ip, mac) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;'
       positional_args:
       - '{{item.hostname}}'
       - '{{item.ip}}'
-      - '{{item.location}}'
+      - '{{item.mac}}'
     with_items:
-    - {hostname: '{{ansible_hostname}}', ip: '{{ansible_default_ipv4.address}}', location: Winter Haven}
+    - {hostname: '{{ansible_hostname}}', ip: '{{ansible_facts.default_ipv4.address}}', mac: '{{ansible_facts.default_ipv4.macaddress}}'}
   - name: Insert rows into services table
-    ansible.builtin.postgresql_query:
+    community.postgresql.postgresql_query:
       login_host: localhost
       login_user: homelab
       login_password: '{{config.homelab_postgres_password}}'
@@ -137,32 +172,73 @@
       - '{{item.name}}'
       - '{{item.host}}'
     with_items:
+    - {name: unbound, host: '{{ansible_hostname}}'}
     - {name: gitea, host: '{{ansible_hostname}}'}
     - {name: jenkins, host: '{{ansible_hostname}}'}
+    - {name: uptime_kuma, host: '{{ansible_hostname}}'}
+    - {name: wiki, host: '{{ansible_hostname}}'}
     - {name: planka, host: '{{ansible_hostname}}'}
-  - name: Insert rows into connections table
-    ansible.builtin.postgresql_query:
+  - name: Insert rows into domains table
+    community.postgresql.postgresql_query:
       login_host: localhost
       login_user: homelab
       login_password: '{{config.homelab_postgres_password}}'
       db: homelab
-      query: 'INSERT INTO connections (host, port, protocol, service, cname) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;'
+      query: 'INSERT INTO domains (name, host) VALUES (%s, %s) ON CONFLICT DO NOTHING;'
       positional_args:
+      - '{{item.name}}'
       - '{{item.host}}'
+    with_items:
+    - {name: homelab.net, host: '{{ansible_hostname}}'}
+    - {name: unbound.homelab.net, host: '{{ansible_hostname}}'}
+    - {name: gitea.homelab.net, host: '{{ansible_hostname}}'}
+    - {name: jenkins.homelab.net, host: '{{ansible_hostname}}'}
+    - {name: uptime-kuma.homelab.net, host: '{{ansible_hostname}}'}
+    - {name: wiki.homelab.net, host: '{{ansible_hostname}}'}
+    - {name: planka.homelab.net, host: '{{ansible_hostname}}'}
+    - {name: nas.homelab.net, host: '{{ansible_hostname}}'}
+    - {name: bitwarden.homelab.net, host: '{{ansible_hostname}}'}
+  - name: Insert rows into protocols table
+    community.postgresql.postgresql_query:
+      login_host: localhost
+      login_user: homelab
+      login_password: '{{config.homelab_postgres_password}}'
+      db: homelab
+      query: 'INSERT INTO protocols (name, default_port) VALUES (%s, %s) ON CONFLICT DO NOTHING;'
+      positional_args:
+      - '{{item.name}}'
+      - '{{item.default_port}}'
+    with_items:
+    - {name: SSH, default_port: 22}
+    - {name: DNS, default_port: 53}
+    - {name: HTTP, default_port: 80}
+    - {name: HTTPS, default_port: 443}
+    - {name: POSTGRESQL, default_port: 5432}
+  - name: Insert rows into connections table
+    community.postgresql.postgresql_query:
+      login_host: localhost
+      login_user: homelab
+      login_password: '{{config.homelab_postgres_password}}'
+      db: homelab
+      query: 'INSERT INTO connections (domain, port, protocol, service) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING;'
+      positional_args:
+      - '{{item.domain}}'
       - '{{item.port}}'
       - '{{item.protocol}}'
       - '{{item.service}}'
-      - '{{item.cname}}'
     with_items:
-    - {host: 'arch', port: 3000, protocol: 'HTTPS', service: 'gitea', cname: 'gitea.homelab.net', }
-    - {host: 'arch', port: 8080, protocol: 'HTTPS', service: 'jenkins', cname: 'jenkins.homelab.net', }
-    - {host: 'arch', port: 1337, protocol: 'HTTPS', service: 'planka', cname: 'planka.homelab.net', }
+    - {domain: unbound.homelab.net, port: 53, protocol: DNS, service: unbound}
+    - {domain: gitea.homelab.net, port: 443, protocol: HTTPS, service: gitea}
+    - {domain: jenkins.homelab.net, port: 443, protocol: HTTPS, service: jenkins}
+    - {domain: uptime-kuma.homelab.net, port: 443, protocol: HTTPS, service: uptime_kuma}
+    - {domain: wiki.homelab.net, port: 443, protocol: HTTPS, service: wiki}
+    - {domain: planka.homelab.net, port: 443, protocol: HTTPS, service: planka}
 
 - name: Create postgres service accounts
   hosts: localhost
   tasks:
   - name: Create dns user
-    ansible.builtin.postgresql_user:
+    community.postgresql.postgresql_user:
       login_host: localhost
       login_user: postgres
       login_password: '{{config.postgres_password}}'
@@ -171,7 +247,7 @@
       password: '{{config.dns_postgres_password}}'
       state: present
   - name: Grant permissions on homelab database to dns user
-    ansible.builtin.postgresql_privs:
+    community.postgresql.postgresql_privs:
       login_host: localhost
       login_user: homelab
       login_password: '{{config.homelab_postgres_password}}'
@@ -182,7 +258,7 @@
       roles: dns
       state: present
   - name: Grant permissions on wireguard schema to dns user
-    ansible.builtin.postgresql_privs:
+    community.postgresql.postgresql_privs:
       login_host: localhost
       login_user: homelab
       login_password: '{{config.homelab_postgres_password}}'
@@ -192,30 +268,19 @@
       privs: USAGE
       roles: dns
       state: present
-  - name: Grant permissions on hosts table to dns user
-    ansible.builtin.postgresql_privs:
+  - name: Grant permissions on hosts and domains tables to dns user
+    community.postgresql.postgresql_privs:
       login_host: localhost
       login_user: homelab
       login_password: '{{config.homelab_postgres_password}}'
       db: homelab
       type: table
-      objs: hosts
-      privs: SELECT
-      roles: dns
-      state: present
-  - name: Grant permissions on connections table to dns user
-    ansible.builtin.postgresql_privs:
-      login_host: localhost
-      login_user: homelab
-      login_password: '{{config.homelab_postgres_password}}'
-      db: homelab
-      type: table
-      objs: connections
+      objs: hosts,domains
       privs: SELECT
       roles: dns
       state: present
   - name: Grant permissions on wireguard.hosts table to dns user
-    ansible.builtin.postgresql_privs:
+    community.postgresql.postgresql_privs:
       login_host: localhost
       login_user: homelab
       login_password: '{{config.homelab_postgres_password}}'

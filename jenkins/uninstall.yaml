@@ -2,6 +2,6 @@
   hosts: localhost
   tasks:
   - name: Remove jenkins docker volume
-    ansible.builtin.docker_volume:
+    vars:
       volume_name: homelab-jenkins-data
-      state: absent
+    ansible.builtin.import_tasks: ../util/remove_docker_volume.yaml
