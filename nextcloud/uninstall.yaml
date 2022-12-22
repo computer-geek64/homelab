@@ -1,0 +1,4 @@
+- name: Remove Nextcloud Docker volume
+  vars:
+    volume_name: homelab-nextcloud-data
+  ansible.builtin.import_tasks: ../util/remove_docker_volume.yaml

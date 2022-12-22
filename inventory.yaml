@@ -1,0 +1,26 @@
+all:
+  hosts:
+    citadel:
+      ansible_user: quant
+      ansible_host: 192.168.0.100
+    tgs:
+      ansible_user: quant
+      ansible_host: ashish.ddns.net
+
+cloud:
+  hosts:
+    tgs:
+on_prem:
+  hosts:
+    citadel:
+
+northeast:
+  hosts:
+south:
+  hosts:
+    citadel:
+midwest:
+  hosts:
+west:
+  hosts:
+    tgs:

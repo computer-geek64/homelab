@@ -1,45 +1,40 @@
-- name: Jenkins docker
-  hosts: localhost
-  tasks:
-  - name: Create jenkins docker volume
-    vars:
-      volume_name: homelab-jenkins-data
-    ansible.builtin.import_tasks: ../util/create_docker_volume.yaml
-  - name: Start jenkins docker container
-    community.docker.docker_container:
-      name: homelab-jenkins-bootstrap
-      image: jenkins/jenkins:latest
-      pull: true
-      published_ports:
-      - 8003:8080
-      volumes:
-      - homelab-jenkins-data:/var/jenkins_home
-      - /etc/localtime:/etc/localtime:ro
-      auto_remove: true
-      keep_volumes: false
-      state: started
-  - name: Wait for jenkins to come online
-    ansible.builtin.wait_for:
-      port: 8003
-      state: started
-  - name: Get jenkins initial admin password
-    vars:
-      password_file: /var/jenkins_home/secrets/initialAdminPassword
-    community.docker.docker_container_exec:
-      container: homelab-jenkins-bootstrap
-      command: 'sh -c "until [ -f {{password_file}} ]; do sleep 1; done; cat {{password_file}}"'
-    register: jenkins_initial_admin_password
-  - name: Print initial admin password
-    ansible.builtin.debug:
-      msg: 'Jenkins initial admin password: {{jenkins_initial_admin_password.stdout}}'
-  - name: Wait for confirmation
-    ansible.builtin.pause:
-      prompt: Go to https://jenkins.homelab.net and finish Jenkins setup
+- name: Create Jenkins Docker volume
+  vars:
+    volume_name: homelab-jenkins-data
+  ansible.builtin.import_tasks: ../util/create_docker_volume.yaml
+- name: Start Jenkins Docker container
+  community.docker.docker_container:
+    name: homelab-jenkins-bootstrap
+    image: jenkins/jenkins:latest
+    pull: true
+    volumes:
+    - homelab-jenkins-data:/var/jenkins_home
+    - /etc/localtime:/etc/localtime:ro
+    published_ports:
+    - 8003:8080
+    auto_remove: true
+    keep_volumes: false
+    state: started
+- name: Wait for Jenkins to come online
+  ansible.builtin.wait_for:
+    host: localhost
+    port: 8003
+    state: started
+- name: Get Jenkins initial admin password
+  vars:
+    password_file: /var/jenkins_home/secrets/initialAdminPassword
+  community.docker.docker_container_exec:
+    container: homelab-jenkins-bootstrap
+    command: 'sh -c "until [ -f {{password_file}} ]; do sleep 1; done; cat {{password_file}}"'
+  register: jenkins_initial_admin_password
+- name: Print Jenkins initial admin password
+  ansible.builtin.debug:
+    msg: 'Jenkins initial admin password: {{jenkins_initial_admin_password.stdout}}'
+- name: Wait for confirmation
+  ansible.builtin.pause:
+    prompt: Go to https://jenkins.homelab.net and finish Jenkins setup
 
-- name: Jenkins install cleanup
-  hosts: localhost
-  tasks:
-  - name: Stop jenkins container
-    community.docker.docker_container:
-      name: homelab-jenkins-bootstrap
-      state: absent
+- name: Stop Jenkins Docker container
+  community.docker.docker_container:
+    name: homelab-jenkins-bootstrap
+    state: absent

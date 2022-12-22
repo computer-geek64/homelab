@@ -1,10 +1,7 @@
-- name: Postgres install cleanup
-  hosts: localhost
-  tasks:
-  - name: Stop postgres container
-    community.docker.docker_container:
-      name: homelab-postgres-bootstrap
-      state: absent
-  - name: Remove postgres network
-    community.docker.docker_network:
-      name: homelab-postgres-bootstrap
+- name: Stop Postgres Docker container
+  community.docker.docker_container:
+    name: homelab-postgres-bootstrap
+    state: absent
+- name: Remove Postgres network
+  community.docker.docker_network:
+    name: homelab-postgres-bootstrap

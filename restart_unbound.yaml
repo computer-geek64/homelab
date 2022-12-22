@@ -1,10 +1,19 @@
 - name: Restart unbound
-  hosts: localhost
+  hosts: citadel
   tasks:
   - name: Load JSON config
     ansible.builtin.include_vars:
       name: config
       file: config.json
+  - name: Create repo temporary directory
+    ansible.builtin.tempfile:
+      state: directory
+    register: homelab_repo
+  - name: Clone git repo
+    ansible.builtin.git:
+      repo: https://github.com/computer-geek64/homelab
+      dest: '{{homelab_repo.path}}'
+      depth: 1
   - name: docker-compose restart unbound
     environment:
       PLANKA_POSTGRES_PASSWORD: '{{config.planka_postgres_password}}'
@@ -16,3 +25,7 @@
       services: unbound
       restarted: true
       state: present
+  - name: Remove repo temporary directory
+    ansible.builtin.file:
+      path: '{{homelab_repo.path}}'
+      state: absent

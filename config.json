@@ -2,9 +2,10 @@
     "docker_volumes_dir": "",
     "postgres_password": "",
     "homelab_postgres_password": "",
+    "nextcloud_postgres_password": "",
     "gitea_postgres_password": "",
+    "wiki_postgres_password": "",
     "planka_postgres_password": "",
     "planka_secret_key": "",
-    "wiki_postgres_password": "",
     "dns_postgres_password": ""
 }

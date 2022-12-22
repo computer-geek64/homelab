@@ -1,8 +1,21 @@
 - name: Stop homelab
-  hosts: localhost
+  hosts: citadel
   tasks:
+  - name: Create repo temporary directory
+    ansible.builtin.tempfile:
+      state: directory
+    register: homelab_repo
+  - name: Clone git repo
+    ansible.builtin.git:
+      repo: https://github.com/computer-geek64/homelab
+      dest: '{{homelab_repo.path}}'
+      depth: 1
   - name: docker-compose down
     ansible.builtin.docker_compose:
       project_name: homelab
-      project_src: .
+      project_src: '{{homelab_repo.path}}'
+      state: absent
+  - name: Remove repo temporary directory
+    ansible.builtin.file:
+      path: '{{homelab_repo.path}}'
       state: absent

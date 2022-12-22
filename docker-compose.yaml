@@ -17,16 +17,30 @@ services:
     - homelab
     ports:
     - 5432:5432
+  nextcloud:
+    container_name: homelab-nextcloud
+    image: nextcloud:latest
+    depends_on:
+    - postgres
+    restart: unless-stopped
+    volumes:
+    - type: volume
+      source: nextcloud-data
+      target: /var/www/html
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+    networks:
+    - homelab
+    ports:
+    - 8001:80
   gitea:
     container_name: homelab-gitea
     image: gitea/gitea:latest
     depends_on:
     - postgres
     restart: unless-stopped
-    #environment:
-    #  GITEA__server__DOMAIN: gitea.homelab.net
-    #  GITEA__server__ROOT_URL: https://gitea.homelab.net
-    #  GITEA__server__LANDING_PAGE: /
     volumes:
     - type: volume
       source: gitea-data
@@ -132,6 +146,9 @@ services:
 volumes:
   postgres-data:
     name: homelab-postgres-data
+    external: true
+  nextcloud-data:
+    name: homelab-nextcloud-data
     external: true
   gitea-data:
     name: homelab-gitea-data

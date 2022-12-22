@@ -1,35 +1,51 @@
-- name: Load configuration
-  hosts: localhost
+- name: Setup homelab
+  hosts: citadel
   tasks:
   - name: Load JSON config
     ansible.builtin.include_vars:
       name: config
       file: config.json
-
-- name: Get sources
-  hosts: localhost
-  tasks:
+  - name: Create repo temporary directory
+    ansible.builtin.tempfile:
+      state: directory
+    register: homelab_repo
   - name: Clone git repo
     ansible.builtin.git:
       repo: https://github.com/computer-geek64/homelab
-      dest: /home/ashish/tmp/homelab
-      update: true
-      version: master
+      dest: '{{homelab_repo.path}}'
+      depth: 1
 
-- ansible.builtin.import_playbook: postgres/install.yaml
+  - name: Install Postgres
+    ansible.builtin.import_tasks: postgres/install.yaml
 
-- ansible.builtin.import_playbook: unbound/install.yaml
+  - name: Install Unbound
+    ansible.builtin.import_tasks: unbound/install.yaml
 
-- ansible.builtin.import_playbook: gitea/install.yaml
+  - name: Install Nextcloud
+    ansible.builtin.import_tasks: nextcloud/install.yaml
 
-- ansible.builtin.import_playbook: planka/install.yaml
+  - name: Install Gitea
+    ansible.builtin.import_tasks: gitea/install.yaml
 
-- ansible.builtin.import_playbook: wiki/install.yaml
+  - name: Install Jenkins
+    ansible.builtin.import_tasks: jenkins/install.yaml
 
-- ansible.builtin.import_playbook: postgres/install_cleanup.yaml
+  - name: Install Uptime Kuma
+    ansible.builtin.import_tasks: uptime_kuma/install.yaml
 
-- ansible.builtin.import_playbook: jenkins/install.yaml
+  - name: Install Wiki
+    ansible.builtin.import_tasks: wiki/install.yaml
 
-- ansible.builtin.import_playbook: uptime_kuma/install.yaml
+  - name: Install Planka
+    ansible.builtin.import_tasks: planka/install.yaml
 
-- ansible.builtin.import_playbook: unbound/install_cleanup.yaml
+  - name: Unbound install cleanup
+    ansible.builtin.import_tasks: unbound/install_cleanup.yaml
+
+  - name: Postgres install cleanup
+    ansible.builtin.import_tasks: postgres/install_cleanup.yaml
+
+  - name: Remove repo temporary directory
+    ansible.builtin.file:
+      path: '{{homelab_repo.path}}'
+      state: absent

@@ -1,7 +1,4 @@
-- name: Uninstall jenkins
-  hosts: localhost
-  tasks:
-  - name: Remove jenkins docker volume
-    vars:
-      volume_name: homelab-jenkins-data
-    ansible.builtin.import_tasks: ../util/remove_docker_volume.yaml
+- name: Remove Jenkins Docker volume
+  vars:
+    volume_name: homelab-jenkins-data
+  ansible.builtin.import_tasks: ../util/remove_docker_volume.yaml

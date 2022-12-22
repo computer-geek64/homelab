@@ -1,35 +1,30 @@
-- name: Uptime kuma docker
-  hosts: localhost
-  tasks:
-  - name: Create uptime kuma docker volume
-    vars:
-      volume_name: homelab-uptime-kuma-data
-    ansible.builtin.import_tasks: ../util/create_docker_volume.yaml
-  - name: Start uptime kuma docker container
-    community.docker.docker_container:
-      name: homelab-uptime-kuma-bootstrap
-      image: louislam/uptime-kuma:latest
-      pull: true
-      published_ports:
-      - 8004:3001
-      volumes:
-      - homelab-uptime-kuma-data:/app/data
-      - /etc/localtime:/etc/localtime:ro
-      auto_remove: true
-      keep_volumes: false
-      state: started
-  - name: Wait for uptime kuma to come online
-    ansible.builtin.wait_for:
-      port: 8004
-      state: started
-  - name: Wait for confirmation
-    ansible.builtin.pause:
-      prompt: Go to https://uptime-kuma.homelab.net and finish Uptime Kuma setup
+- name: Create Uptime Kuma Docker volume
+  vars:
+    volume_name: homelab-uptime-kuma-data
+  ansible.builtin.import_tasks: ../util/create_docker_volume.yaml
+- name: Start Uptime Kuma Docker container
+  community.docker.docker_container:
+    name: homelab-uptime-kuma-bootstrap
+    image: louislam/uptime-kuma:latest
+    pull: true
+    volumes:
+    - homelab-uptime-kuma-data:/app/data
+    - /etc/localtime:/etc/localtime:ro
+    published_ports:
+    - 8004:3001
+    auto_remove: true
+    keep_volumes: false
+    state: started
+- name: Wait for Uptime Kuma to come online
+  ansible.builtin.wait_for:
+    host: localhost
+    port: 8004
+    state: started
+- name: Wait for confirmation
+  ansible.builtin.pause:
+    prompt: Go to https://uptime-kuma.homelab.net and finish Uptime Kuma setup
 
-- name: Uptime kuma install cleanup
-  hosts: localhost
-  tasks:
-  - name: Stop uptime kuma container
-    community.docker.docker_container:
-      name: homelab-uptime-kuma-bootstrap
-      state: absent
+- name: Stop Uptime Kuma Docker container
+  community.docker.docker_container:
+    name: homelab-uptime-kuma-bootstrap
+    state: absent

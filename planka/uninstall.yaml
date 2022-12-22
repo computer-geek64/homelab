@@ -1,7 +1,4 @@
-- name: Uninstall planka
-  hosts: localhost
-  tasks:
-  - name: Remove planka docker volume
-    vars:
-      volume_name: homelab-planka-data
-    ansible.builtin.import_tasks: ../util/remove_docker_volume.yaml
+- name: Remove Planka Docker volume
+  vars:
+    volume_name: homelab-planka-data
+  ansible.builtin.import_tasks: ../util/remove_docker_volume.yaml
