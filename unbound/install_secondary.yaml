@@ -1,0 +1,16 @@
+- name: Pull Ubuntu Docker image
+  community.docker.docker_image:
+    name: 'docker.io/library/ubuntu'
+    tag: jammy
+    source: pull
+    force_source: true
+    state: present
+
+- name: Build Unbound Docker image
+  community.docker.docker_image:
+    name: unbound
+    build:
+      path: '{{homelab_repo.path}}/unbound'
+    source: build
+    force_source: true
+    state: present

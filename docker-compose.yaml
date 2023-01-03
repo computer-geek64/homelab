@@ -3,7 +3,7 @@ version: '3'
 services:
   postgres:
     container_name: homelab-postgres
-    image: postgres:latest
+    image: postgres:15.1
     restart: unless-stopped
     volumes:
     - type: volume
@@ -17,11 +17,49 @@ services:
     - homelab
     ports:
     - 5432:5432
-  nextcloud:
-    container_name: homelab-nextcloud
-    image: nextcloud:latest
+    dns:
+    - 172.19.0.1
+  unbound:
+    container_name: homelab-unbound
+    image: unbound:latest
     depends_on:
     - postgres
+    restart: unless-stopped
+    environment:
+      DNS_POSTGRES_PASSWORD: ${DNS_POSTGRES_PASSWORD}
+    volumes:
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+    network_mode: host
+  heimdall:
+    container_name: homelab-heimdall
+    image: linuxserver/heimdall:2.5.4
+    depends_on:
+    - postgres
+    - unbound
+    restart: unless-stopped
+    volumes:
+    - type: volume
+      source: heimdall-data
+      target: /config
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+    networks:
+    - homelab
+    ports:
+    - 8000:443
+    dns:
+    - 172.19.0.1
+  nextcloud:
+    container_name: homelab-nextcloud
+    image: nextcloud:25
+    depends_on:
+    - postgres
+    - unbound
     restart: unless-stopped
     volumes:
     - type: volume
@@ -35,11 +73,14 @@ services:
     - homelab
     ports:
     - 8001:80
+    dns:
+    - 172.19.0.1
   gitea:
     container_name: homelab-gitea
-    image: gitea/gitea:latest
+    image: gitea/gitea:1.18
     depends_on:
     - postgres
+    - unbound
     restart: unless-stopped
     volumes:
     - type: volume
@@ -53,9 +94,13 @@ services:
     - homelab
     ports:
     - 8002:8002
+    dns:
+    - 172.19.0.1
   jenkins:
     container_name: homelab-jenkins
-    image: jenkins/jenkins:latest
+    image: jenkins/jenkins:lts-jdk11
+    depends_on:
+    - unbound
     restart: unless-stopped
     volumes:
     - type: volume
@@ -69,9 +114,13 @@ services:
     - homelab
     ports:
     - 8003:8080
+    dns:
+    - 172.19.0.1
   uptime-kuma:
     container_name: homelab-uptime-kuma
-    image: louislam/uptime-kuma:latest
+    image: louislam/uptime-kuma:1.19.2
+    depends_on:
+    - unbound
     restart: unless-stopped
     volumes:
     - type: volume
@@ -85,9 +134,14 @@ services:
     - homelab
     ports:
     - 8004:3001
+    dns:
+    - 172.19.0.1
   wiki:
     container_name: homelab-wiki
-    image: requarks/wiki
+    image: requarks/wiki:2
+    depends_on:
+    - postgres
+    - unbound
     restart: unless-stopped
     environment:
       DB_TYPE: postgres
@@ -105,11 +159,14 @@ services:
     - homelab
     ports:
     - 8005:3000
+    dns:
+    - 172.19.0.1
   planka:
     container_name: homelab-planka
-    image: ghcr.io/plankanban/planka:latest
+    image: ghcr.io/plankanban/planka:1.9.2
     depends_on:
     - postgres
+    - unbound
     restart: unless-stopped
     environment:
       BASE_URL: https://planka.homelab.net
@@ -128,24 +185,15 @@ services:
     - homelab
     ports:
     - 8006:1337
-  unbound:
-    container_name: homelab-unbound
-    image: unbound:latest
-    depends_on:
-    - postgres
-    restart: unless-stopped
-    environment:
-      DNS_POSTGRES_PASSWORD: ${DNS_POSTGRES_PASSWORD}
-    volumes:
-    - type: bind
-      source: /etc/localtime
-      target: /etc/localtime
-      read_only: true
-    network_mode: host
+    dns:
+    - 172.19.0.1
 
 volumes:
   postgres-data:
     name: homelab-postgres-data
+    external: true
+  heimdall-data:
+    name: homelab-heimdall-data
     external: true
   nextcloud-data:
     name: homelab-nextcloud-data
@@ -166,3 +214,8 @@ volumes:
 networks:
   homelab:
     name: homelab
+    ipam:
+      config:
+      - subnet: 172.19.0.0/24
+        ip_range: 172.19.0.0/24
+        gateway: 172.19.0.1

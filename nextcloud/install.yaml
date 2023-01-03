@@ -24,7 +24,7 @@
 - name: Start Nextcloud Docker container
   community.docker.docker_container:
     name: homelab-nextcloud-bootstrap
-    image: nextcloud:latest
+    image: nextcloud:25
     pull: true
     env:
       OVERWRITEHOST: nextcloud.homelab.net
@@ -39,9 +39,11 @@
     - homelab-nextcloud-data:/var/www/html
     - /etc/localtime:/etc/localtime:ro
     networks:
-    - name: homelab-postgres-bootstrap
+    - name: homelab-bootstrap
     published_ports:
     - 8001:80
+    dns_servers:
+    - 172.19.0.1
     auto_remove: true
     keep_volumes: false
     state: started

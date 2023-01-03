@@ -1,5 +1,5 @@
 # Dockerfile
-FROM ubuntu:latest
+FROM ubuntu:jammy
 WORKDIR /code
 
 ENTRYPOINT ["./start.sh"]

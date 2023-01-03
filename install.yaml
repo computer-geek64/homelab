@@ -1,5 +1,5 @@
-- name: Setup homelab
-  hosts: citadel
+- name: Setup
+  hosts: all
   tasks:
   - name: Load JSON config
     ansible.builtin.include_vars:
@@ -15,11 +15,26 @@
       dest: '{{homelab_repo.path}}'
       depth: 1
 
+- name: Install on Citadel
+  hosts: Citadel
+  tasks:
+  - name: Create bootstrap Docker network
+    community.docker.docker_network:
+      name: homelab-bootstrap
+      ipam_config:
+      - subnet: 172.19.0.0/24
+        ip_range: 172.19.0.0/24
+        gateway: 172.19.0.1
+      state: present
+
   - name: Install Postgres
     ansible.builtin.import_tasks: postgres/install.yaml
 
   - name: Install Unbound
     ansible.builtin.import_tasks: unbound/install.yaml
+
+  - name: Install Heimdall
+    ansible.builtin.import_tasks: heimdall/install.yaml
 
   - name: Install Nextcloud
     ansible.builtin.import_tasks: nextcloud/install.yaml
@@ -39,12 +54,29 @@
   - name: Install Planka
     ansible.builtin.import_tasks: planka/install.yaml
 
+- name: Install on TGS
+  hosts: TGS
+  tasks:
+  - name: Install Unbound
+    ansible.builtin.import_tasks: unbound/install_secondary.yaml
+
+- name: Install cleanup on Citadel
+  hosts: Citadel
+  tasks:
   - name: Unbound install cleanup
     ansible.builtin.import_tasks: unbound/install_cleanup.yaml
 
   - name: Postgres install cleanup
     ansible.builtin.import_tasks: postgres/install_cleanup.yaml
 
+  - name: Remove bootstrap Docker network
+    community.docker.docker_network:
+      name: homelab-bootstrap
+      state: absent
+
+- name: Teardown
+  hosts: all
+  tasks:
   - name: Remove repo temporary directory
     ansible.builtin.file:
       path: '{{homelab_repo.path}}'

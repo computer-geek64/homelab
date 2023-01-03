@@ -21,10 +21,10 @@
   vars:
     volume_name: homelab-gitea-data
   ansible.builtin.import_tasks: ../util/create_docker_volume.yaml
-- name: Start Gitea docker container
+- name: Start Gitea Docker container
   community.docker.docker_container:
     name: homelab-gitea-bootstrap
-    image: gitea/gitea:latest
+    image: gitea/gitea:1.18
     pull: true
     env:
       GITEA__database__DB_TYPE: postgres
@@ -36,14 +36,23 @@
       GITEA__server__ROOT_URL: https://gitea.homelab.net
       GITEA__server__OFFLINE_MODE: 'true'
       GITEA__server__DISABLE_SSH: 'true'
+      GITEA__mailer__ENABLED: 'true'
+      GITEA__mailer__PROTOCOL: smtp+starttls
+      GITEA__mailer__SMTP_ADDR: in-v3.mailjet.com
+      GITEA__mailer__SMTP_PORT: '587'
+      GITEA__mailer__USER: '{{config.smtp_username}}'
+      GITEA__mailer__PASSWD: '{{config.smtp_password}}'
+      GITEA__mailer__FROM: '"Gitea" <gitea@ashishdsouza.com>'
       APP_NAME: Gitea
     volumes:
     - homelab-gitea-data:/data
     - /etc/localtime:/etc/localtime:ro
     networks:
-    - name: homelab-postgres-bootstrap
+    - name: homelab-bootstrap
     published_ports:
     - 8002:8002
+    dns_servers:
+    - 172.19.0.1
     auto_remove: true
     keep_volumes: false
     state: started

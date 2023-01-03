@@ -5,13 +5,17 @@
 - name: Start Uptime Kuma Docker container
   community.docker.docker_container:
     name: homelab-uptime-kuma-bootstrap
-    image: louislam/uptime-kuma:latest
+    image: louislam/uptime-kuma:1.19.2
     pull: true
     volumes:
     - homelab-uptime-kuma-data:/app/data
     - /etc/localtime:/etc/localtime:ro
+    networks:
+    - homelab-bootstrap
     published_ports:
     - 8004:3001
+    dns_servers:
+    - 172.19.0.1
     auto_remove: true
     keep_volumes: false
     state: started

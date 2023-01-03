@@ -5,13 +5,17 @@
 - name: Start Jenkins Docker container
   community.docker.docker_container:
     name: homelab-jenkins-bootstrap
-    image: jenkins/jenkins:latest
+    image: jenkins/jenkins:lts-jdk11
     pull: true
     volumes:
     - homelab-jenkins-data:/var/jenkins_home
     - /etc/localtime:/etc/localtime:ro
+    networks:
+    - homelab-bootstrap
     published_ports:
     - 8003:8080
+    dns_server:
+    - 172.19.0.1
     auto_remove: true
     keep_volumes: false
     state: started

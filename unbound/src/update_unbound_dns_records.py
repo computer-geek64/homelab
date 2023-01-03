@@ -6,18 +6,26 @@ import psycopg2
 
 
 def pull_configuration() -> dict[str, str]:
-    with psycopg2.connect(host='127.0.0.1', dbname='homelab', user='dns', password=os.environ['DNS_POSTGRES_PASSWORD']) as connection:
+    vpn_dns = os.environ.get('VPN_DNS', 'false').lower() == 'true'
+
+    with psycopg2.connect(host=os.environ.get('POSTGRES_HOST', '127.0.0.1'), dbname='homelab', user='dns', password=os.environ['DNS_POSTGRES_PASSWORD']) as connection:
         cursor = connection.cursor()
 
         records = {}
 
-        cursor.execute('SELECT hostname, ip, alias FROM hosts WHERE ip IS NOT NULL;')
+        if vpn_dns:
+            cursor.execute('SELECT lower(wh.hostname), wh.ip, lower(h.alias) FROM wireguard.hosts AS wh INNER JOIN hosts AS h ON wh.hostname = h.hostname;')
+        else:
+            cursor.execute('SELECT lower(h.hostname), h.ip, lower(h.alias) FROM hosts AS h WHERE h.ip IS NOT NULL;')
         for domain, ip, alias in cursor.fetchall():
             records[domain] = ip
             if alias is not None:
                 records[alias] = ip
 
-        cursor.execute('SELECT name, ip FROM domains INNER JOIN hosts ON domains.host = hosts.hostname WHERE ip IS NOT NULL;')
+        if vpn_dns:
+            cursor.execute('SELECT lower(d.name), wh.ip FROM domains AS d INNER JOIN wireguard.hosts AS wh ON d.host = wh.hostname;')
+        else:
+            cursor.execute('SELECT lower(d.name), h.ip FROM domains AS d INNER JOIN hosts AS h ON d.host = h.hostname WHERE h.ip IS NOT NULL;')
         for domain, ip in cursor.fetchall():
             records[domain] = ip
 

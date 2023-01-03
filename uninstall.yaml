@@ -1,5 +1,5 @@
-- name: Load configuration
-  hosts: citadel
+- name: Setup
+  hosts: all
   tasks:
   - name: Load JSON config
     ansible.builtin.include_vars:
@@ -15,30 +15,33 @@
       dest: '{{homelab_repo.path}}'
       depth: 1
 
+- name: Uninstall on Citadel
+  hosts: Citadel
+  tasks:
   - name: Uninstall Postgres
     ansible.builtin.import_tasks: postgres/uninstall.yaml
 
-  - name: Install Nextcloud
+  - name: Uninstall Heimdall
+    ansible.builtin.import_tasks: heimdall/uninstall.yaml
+
+  - name: Uninstall Nextcloud
     ansible.builtin.import_tasks: nextcloud/uninstall.yaml
-
-  - name: Install Gitea
-    ansible.builtin.import_tasks: gitea/uninstall.yaml
-
-  - name: Uninstall Planka
-    ansible.builtin.import_tasks: planka/uninstall.yaml
-
-  - name: Uninstall Uptime Kuma
-    ansible.builtin.import_tasks: uptime_kuma/uninstall.yaml
-
-  - name: Uninstall Jenkins
-    ansible.builtin.import_tasks: jenkins/uninstall.yaml
 
   - name: Uninstall Gitea
     ansible.builtin.import_tasks: gitea/uninstall.yaml
 
-  - name: Uninstall Postgres
-    ansible.builtin.import_tasks: postgres/uninstall.yaml
+  - name: Uninstall Jenkins
+    ansible.builtin.import_tasks: jenkins/uninstall.yaml
 
+  - name: Uninstall Uptime Kuma
+    ansible.builtin.import_tasks: uptime_kuma/uninstall.yaml
+
+  - name: Uninstall Planka
+    ansible.builtin.import_tasks: planka/uninstall.yaml
+
+- name: Teardown
+  hosts: all
+  tasks:
   - name: Remove repo temporary directory
     ansible.builtin.file:
       path: '{{homelab_repo.path}}'

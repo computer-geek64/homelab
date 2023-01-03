@@ -1,7 +1,7 @@
 - name: Pull Ubuntu Docker image
   community.docker.docker_image:
     name: 'docker.io/library/ubuntu'
-    tag: latest
+    tag: jammy
     source: pull
     force_source: true
     state: present

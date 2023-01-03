@@ -2,14 +2,10 @@
   vars:
     volume_name: homelab-postgres-data
   ansible.builtin.import_tasks: ../util/create_docker_volume.yaml
-- name: Create Postgres Docker network
-  community.docker.docker_network:
-    name: homelab-postgres-bootstrap
-    state: present
 - name: Start Postgres Docker container
   community.docker.docker_container:
     name: homelab-postgres-bootstrap
-    image: postgres:latest
+    image: postgres:15.1
     pull: true
     env:
       POSTGRES_DB: postgres
@@ -19,11 +15,13 @@
     - homelab-postgres-data:/var/lib/postgresql/data
     - /etc/localtime:/etc/localtime:ro
     networks:
-    - name: homelab-postgres-bootstrap
+    - name: homelab-bootstrap
       aliases:
       - postgres
     published_ports:
     - 5432:5432
+    dns_servers:
+    - 172.19.0.1
     auto_remove: true
     keep_volumes: false
     state: started
@@ -140,9 +138,24 @@
     columns:
     - hostname VARCHAR PRIMARY KEY REFERENCES hosts (hostname) ON UPDATE CASCADE ON DELETE CASCADE
     - ip VARCHAR NOT NULL UNIQUE
-    - privatekey VARCHAR NOT NULL
-    - publickey VARCHAR NOT NULL
-    - server BOOLEAN NOT NULL DEFAULT false
+    - private_key VARCHAR NOT NULL
+    - public_key VARCHAR NOT NULL
+    - dns VARCHAR
+    owner: homelab
+    state: present
+- name: Create wireguard.tunnels table
+  community.postgresql.postgresql_table:
+    login_host: localhost
+    login_user: homelab
+    login_password: '{{config.homelab_postgres_password}}'
+    db: homelab
+    table: wireguard.tunnels
+    columns:
+    - server VARCHAR REFERENCES wireguard.hosts (hostname) ON UPDATE CASCADE ON DELETE CASCADE
+    - client VARCHAR REFERENCES wireguard.hosts (hostname) ON UPDATE CASCADE ON DELETE CASCADE
+    - endpoint VARCHAR NOT NULL
+    - allowed_ips VARCHAR NOT NULL
+    - PRIMARY KEY (server, client)
     owner: homelab
     state: present
 - name: Insert rows into hosts table
@@ -158,7 +171,8 @@
     - '{{item.mac}}'
     - '{{item.alias}}'
   with_items:
-  - {hostname: '{{ansible_hostname}}', ip: '{{ansible_facts.default_ipv4.address}}', mac: '{{ansible_facts.default_ipv4.macaddress}}', alias: citadel}
+  - {hostname: '{{hostvars.Citadel.ansible_hostname}}', ip: '{{hostvars.Citadel.ansible_facts.default_ipv4.address}}', mac: '{{hostvars.Citadel.ansible_facts.default_ipv4.macaddress}}', alias: Citadel}
+  - {hostname: '{{hostvars.TGS.ansible_hostname}}', ip: '{{hostvars.TGS.ansible_facts.default_ipv4.address}}', mac: '{{hostvars.TGS.ansible_facts.default_ipv4.macaddress}}', alias: TGS}
 - name: Insert rows into services table
   community.postgresql.postgresql_query:
     login_host: localhost
@@ -171,6 +185,7 @@
     - '{{item.host}}'
   with_items:
   - {name: unbound, host: '{{ansible_hostname}}'}
+  - {name: heimdall, host: '{{ansible_hostname}}'}
   - {name: nextcloud, host: '{{ansible_hostname}}'}
   - {name: gitea, host: '{{ansible_hostname}}'}
   - {name: jenkins, host: '{{ansible_hostname}}'}
@@ -190,14 +205,11 @@
   with_items:
   - {name: homelab.net, host: '{{ansible_hostname}}'}
   - {name: nextcloud.homelab.net, host: '{{ansible_hostname}}'}
-  - {name: unbound.homelab.net, host: '{{ansible_hostname}}'}
   - {name: gitea.homelab.net, host: '{{ansible_hostname}}'}
   - {name: jenkins.homelab.net, host: '{{ansible_hostname}}'}
   - {name: uptime-kuma.homelab.net, host: '{{ansible_hostname}}'}
   - {name: wiki.homelab.net, host: '{{ansible_hostname}}'}
   - {name: planka.homelab.net, host: '{{ansible_hostname}}'}
-  - {name: nas.homelab.net, host: '{{ansible_hostname}}'}
-  - {name: bitwarden.homelab.net, host: '{{ansible_hostname}}'}
 - name: Insert rows into protocols table
   community.postgresql.postgresql_query:
     login_host: localhost
@@ -214,6 +226,7 @@
   - {name: HTTP, default_port: 80}
   - {name: HTTPS, default_port: 443}
   - {name: POSTGRESQL, default_port: 5432}
+  - {name: WIREGUARD, default_port: 51820}
 - name: Insert rows into connections table
   community.postgresql.postgresql_query:
     login_host: localhost
@@ -227,7 +240,7 @@
     - '{{item.protocol}}'
     - '{{item.service}}'
   with_items:
-  - {domain: unbound.homelab.net, port: 53, protocol: DNS, service: unbound}
+  - {domain: homelab.net, port: 443, protocol: HTTPS, service: heimdall}
   - {domain: nextcloud.homelab.net, port: 443, protocol: HTTPS, service: nextcloud}
   - {domain: gitea.homelab.net, port: 443, protocol: HTTPS, service: gitea}
   - {domain: jenkins.homelab.net, port: 443, protocol: HTTPS, service: jenkins}
@@ -287,5 +300,60 @@
     objs: hosts
     privs: SELECT
     roles: dns
+    schema: wireguard
+    state: present
+
+- name: Create wireguard user
+  community.postgresql.postgresql_user:
+    login_host: localhost
+    login_user: postgres
+    login_password: '{{config.postgres_password}}'
+    login_db: postgres
+    name: wireguard
+    password: '{{config.wireguard_postgres_password}}'
+    state: present
+- name: Grant permissions on homelab database to wireguard user
+  community.postgresql.postgresql_privs:
+    login_host: localhost
+    login_user: homelab
+    login_password: '{{config.homelab_postgres_password}}'
+    db: homelab
+    type: database
+    objs: homelab
+    privs: CONNECT
+    roles: wireguard
+    state: present
+- name: Grant permissions on wireguard schema to wireguard user
+  community.postgresql.postgresql_privs:
+    login_host: localhost
+    login_user: homelab
+    login_password: '{{config.homelab_postgres_password}}'
+    db: homelab
+    type: schema
+    objs: wireguard
+    privs: USAGE
+    roles: wireguard
+    state: present
+- name: Grant permissions on hosts table to wireguard user
+  community.postgresql.postgresql_privs:
+    login_host: localhost
+    login_user: homelab
+    login_password: '{{config.homelab_postgres_password}}'
+    db: homelab
+    type: table
+    objs: hosts
+    privs: SELECT
+    roles: wireguard
+    state: present
+- name: Grant permissions on wireguard.hosts and wireguard.tunnels tables to wireguard user
+  community.postgresql.postgresql_privs:
+    login_host: localhost
+    login_user: homelab
+    login_password: '{{config.homelab_postgres_password}}'
+    db: homelab
+    type: table
+    objs: hosts,tunnels
+    privs: SELECT
+    roles: wireguard
     schema: wireguard
     state: present

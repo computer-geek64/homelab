@@ -20,7 +20,7 @@
 - name: Start Wiki Docker container
   community.docker.docker_container:
     name: homelab-wiki-bootstrap
-    image: requarks/wiki:latest
+    image: requarks/wiki:2
     pull: true
     env:
       DB_TYPE: postgres
@@ -32,9 +32,11 @@
     volumes:
     - /etc/localtime:/etc/localtime:ro
     networks:
-    - name: homelab-postgres-bootstrap
+    - name: homelab-bootstrap
     published_ports:
     - 8005:3000
+    dns_servers:
+    - 172.19.0.1
     auto_remove: true
     keep_volumes: false
     state: started

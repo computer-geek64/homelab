@@ -1,26 +1,29 @@
 all:
   hosts:
-    citadel:
+    Citadel:
       ansible_user: quant
-      ansible_host: 192.168.0.100
-    tgs:
+      ansible_host: 192.168.2.2
+      ansible_python_interpreter: /usr/bin/python3
+      vpn_ip: 192.168.2.2
+    TGS:
       ansible_user: quant
       ansible_host: ashish.ddns.net
+      ansible_python_interpreter: /usr/bin/python3
 
 cloud:
   hosts:
-    tgs:
+    TGS:
 on_prem:
   hosts:
-    citadel:
+    Citadel:
 
 northeast:
   hosts:
 south:
   hosts:
-    citadel:
+    Citadel:
 midwest:
   hosts:
 west:
   hosts:
-    tgs:
+    TGS:
