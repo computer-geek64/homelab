@@ -1,5 +1,5 @@
 - name: Stop Unbound
-  hosts: Moria
+  hosts: Erebor
   tasks:
   - name: Stop Unbound Docker container
     community.docker.docker_container:

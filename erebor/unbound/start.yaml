@@ -1,5 +1,5 @@
 - name: Start Unbound
-  hosts: Moria
+  hosts: Erebor
   tasks:
   - name: Read homelab config
     ansible.builtin.slurp:

@@ -1,5 +1,5 @@
 - name: Reload Unbound
-  hosts: Moria
+  hosts: Erebor
   tasks:
   - name: Restart Unbound Docker container
     community.docker.docker_container:

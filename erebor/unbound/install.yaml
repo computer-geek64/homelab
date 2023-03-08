@@ -1,5 +1,5 @@
 - name: Install Unbound
-  hosts: Moria
+  hosts: Erebor
   tasks:
   - name: Create temporary build directory
     ansible.builtin.tempfile:
