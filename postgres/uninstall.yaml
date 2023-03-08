@@ -1,4 +1,0 @@
-- name: Remove Postgres Docker volume
-  vars:
-    volume_name: homelab-postgres-data
-  ansible.builtin.import_tasks: ../util/remove_docker_volume.yaml

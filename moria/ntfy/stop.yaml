@@ -1,0 +1,7 @@
+- name: Stop Ntfy
+  hosts: Moria
+  tasks:
+  - name: Stop Ntfy Docker container
+    community.docker.docker_container:
+      name: ntfy
+      state: absent

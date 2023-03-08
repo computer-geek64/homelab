@@ -1,0 +1,114 @@
+- name: Install Gitea
+  hosts: Moria
+  vars_prompt:
+  - name: postgres_password
+    prompt: Enter password for Postgres user gitea
+  - name: smtp_address
+    prompt: Enter SMTP server address
+    private: false
+  - name: smtp_port
+    prompt: Enter SMTP server port
+    private: false
+  - name: smtp_user
+    prompt: Enter SMTP user
+  - name: smtp_password
+    prompt: Enter SMTP password
+  - name: smtp_from_address
+    prompt: Enter SMTP from address
+    private: false
+  tasks:
+  - name: Create Gitea data Docker volume directory
+    become: true
+    ansible.builtin.file:
+      path: /data/gitea-data
+      state: directory
+  - name: Create Gitea data Docker volume
+    community.docker.docker_volume:
+      volume_name: gitea-data
+      driver: local
+      driver_options:
+        type: none
+        o: bind
+        device: /data/gitea-data
+  - name: Create Gitea Postgres data Docker volume directory
+    become: true
+    ansible.builtin.file:
+      path: /data/gitea-postgres-data
+      state: directory
+  - name: Create Gitea Postgres data Docker volume
+    community.docker.docker_volume:
+      volume_name: gitea-postgres-data
+      driver: local
+      driver_options:
+        type: none
+        o: bind
+        device: /data/gitea-postgres-data
+
+  - name: Copy Nginx config file for Gitea
+    become: true
+    ansible.builtin.copy:
+      src: src/nginx.conf
+      dest: /data/nginx-config/gitea.conf
+      mode: preserve
+
+  - name: Read homelab config
+    ansible.builtin.slurp:
+      src: '{{ansible_user_dir}}/.homelab.json'
+    register: homelab_config_file
+  - name: Set homelab_config variable
+    ansible.builtin.set_fact:
+      homelab_config: '{{homelab_config_file.content|b64decode|from_json}}'
+
+  - name: Insert into Postgres table service
+    vars:
+      gitea_config:
+        postgres:
+          password: '{{postgres_password}}'
+        smtp:
+          address: '{{smtp_address}}'
+          port: '{{smtp_port}}'
+          user: '{{smtp_user}}'
+          password: '{{smtp_password}}'
+          from_address: '{{smtp_from_address}}'
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      db: '{{homelab_config.database.name}}'
+      query: 'INSERT INTO service (name, host, config) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;'
+      positional_args:
+      - '{{item.name}}'
+      - '{{item.host}}'
+      - '{{item.config}}'
+    with_items:
+    - {name: gitea, host: '{{ansible_hostname}}', config: '{{gitea_config|to_json}}'}
+  - name: Insert into Postgres table service_port
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      db: '{{homelab_config.database.name}}'
+      query: 'INSERT INTO service_port (service, port, domain, reverse_proxy, reverse_proxy_port) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;'
+      positional_args:
+      - '{{item.service}}'
+      - '{{item.port}}'
+      - '{{item.domain}}'
+      - '{{item.reverse_proxy}}'
+      - '{{item.reverse_proxy_port}}'
+    with_items:
+    - {service: gitea, port: 10003, domain: null, reverse_proxy: nginx_moria, reverse_proxy_port: 443}
+  - name: Insert into Postgres table service_data
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      db: '{{homelab_config.database.name}}'
+      query: 'INSERT INTO service_data (service, data_name, storage_type, source) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING;'
+      positional_args:
+      - '{{item.service}}'
+      - '{{item.data_name}}'
+      - '{{item.storage_type}}'
+      - '{{item.source}}'
+    with_items:
+    - {service: gitea, data_name: data, storage_type: docker, source: gitea-data}
+    - {service: gitea, data_name: postgres_data, storage_type: docker, source: gitea-postgres-data}

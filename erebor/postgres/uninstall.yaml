@@ -1,0 +1,23 @@
+- name: Stop Postgres
+  ansible.builtin.import_playbook: stop.yaml
+
+- name: Uninstall Postgres
+  hosts: Erebor
+  tasks:
+  - name: Remove Postgres data Docker volume
+    community.docker.docker_volume:
+      volume_name: postgres-data
+      state: absent
+  - name: Remove Postgres data Docker volume directory
+    become: true
+    ansible.builtin.file:
+      path: /data/postgres-data
+      state: absent
+
+- name: Uninstall homelab config from all servers
+  hosts: Erebor, Moria, Rivendell
+  tasks:
+  - name: Remove .homelab.json from service user of all servers
+    ansible.builtin.file:
+      path: '{{ansible_user_dir}}/.homelab.json'
+      state: absent

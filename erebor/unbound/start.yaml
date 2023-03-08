@@ -1,0 +1,38 @@
+- name: Start Unbound
+  hosts: Moria
+  tasks:
+  - name: Read homelab config
+    ansible.builtin.slurp:
+      src: '{{ansible_user_dir}}/.homelab.json'
+    register: homelab_config_file
+  - name: Set homelab_config variable
+    ansible.builtin.set_fact:
+      homelab_config: '{{homelab_config_file.content|b64decode|from_json}}'
+
+  - name: Get Postgres user dns password
+    no_log: false
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      db: '{{homelab_config.database.name}}'
+      query: "SELECT config->'users'->'dns'->'password' AS postgres_dns_password FROM service WHERE name = %s;"
+      positional_args:
+      - postgres
+    register: postgres_dns_password_query
+
+  - name: Start Unbound Docker container
+    community.docker.docker_container:
+      name: unbound
+      image: unbound:latest
+      restart_policy: unless-stopped
+      env:
+        NETWORK: ''
+        POSTGRES_HOST: '{{homelab_config.database.host}}'
+        POSTGRES_DNS_PASSWORD: '{{postgres_dns_password_query.query_result[0].postgres_dns_password}}'
+      volumes:
+      - '{{ansible_user_dir}}/.homelab.json:/homelab.json'
+      - /etc/localtime:/etc/localtime:ro
+      network_mode: host
+      keep_volumes: false
+      state: started

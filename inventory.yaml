@@ -1,29 +1,50 @@
 all:
   hosts:
-    Citadel:
-      ansible_user: quant
+    Erebor:
+      ansible_user: thror
+      ansible_host: 205.185.115.161
+      ansible_python_interpreter: /usr/bin/python3
+    Moria:
+      ansible_user: durin
+      ansible_host: 192.210.213.169
+      ansible_python_interpreter: /usr/bin/python3
+    Rivendell:
+      ansible_user: elrond
       ansible_host: 192.168.2.2
       ansible_python_interpreter: /usr/bin/python3
-      vpn_ip: 192.168.2.2
-    TGS:
-      ansible_user: quant
-      ansible_host: ashish.ddns.net
+    Isengard:
+      ansible_user: saruman
+      ansible_host: 192.168.2.3
       ansible_python_interpreter: /usr/bin/python3
+    Barad-dur:
+      ansible_user: sauron
+      ansible_host: 192.168.2.4
+      ansible_python_interpreter: /usr/bin/python3
+
+home:
+  hosts:
+    Rivendell:
+    Isengard:
+    Barad-dur:
 
 cloud:
   hosts:
-    TGS:
+    Erebor:
+    Moria:
 on_prem:
-  hosts:
-    Citadel:
+  children:
+    home:
 
 northeast:
   hosts:
 south:
   hosts:
-    Citadel:
+    Moria:
+    Rivendell:
+    Isengard:
+    Barad-dur:
 midwest:
   hosts:
 west:
   hosts:
-    TGS:
+    Erebor:

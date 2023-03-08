@@ -1,0 +1,7 @@
+- name: Stop Jenkins
+  hosts: Moria
+  tasks:
+  - name: Stop Jenkins Docker container
+    community.docker.docker_container:
+      name: jenkins
+      state: absent

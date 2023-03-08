@@ -1,4 +1,0 @@
-- name: Stop Unbound Docker container
-  community.docker.docker_container:
-    name: homelab-unbound-bootstrap
-    state: absent

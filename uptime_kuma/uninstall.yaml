@@ -1,4 +1,0 @@
-- name: Remove Uptime Kuma Docker volume
-  vars:
-    volume_name: homelab-uptime-kuma-data
-  ansible.builtin.import_tasks: ../util/remove_docker_volume.yaml

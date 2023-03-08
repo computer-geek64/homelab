@@ -1,0 +1,52 @@
+- name: Start Gitea
+  hosts: Moria
+  tasks:
+  - name: Create temporary Docker Compose directory
+    ansible.builtin.tempfile:
+      state: directory
+    register: docker_compose_dir
+  - name: Copy docker-compose.yaml
+    ansible.builtin.copy:
+      src: src/docker-compose.yaml
+      dest: '{{docker_compose_dir.path}}/docker-compose.yaml'
+      mode: preserve
+
+  - name: Read homelab config
+    ansible.builtin.slurp:
+      src: '{{ansible_user_dir}}/.homelab.json'
+    register: homelab_config_file
+  - name: Set homelab_config variable
+    ansible.builtin.set_fact:
+      homelab_config: '{{homelab_config_file.content|b64decode|from_json}}'
+
+  - name: Get Gitea config
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      db: '{{homelab_config.database.name}}'
+      query: 'SELECT config FROM service WHERE name = %s;'
+      positional_args:
+      - gitea
+    register: gitea_config_query
+  - name: Set gitea_config variable
+    ansible.builtin.set_fact:
+      gitea_config: '{{gitea_config_query.query_result[0].config}}'
+
+  - name: Docker Compose up Gitea
+    environment:
+      POSTGRES_PASSWORD: '{{gitea_config.postgres.password}}'
+      SMTP_ADDRESS: '{{gitea_config.smtp.address}}'
+      SMTP_PORT: '{{gitea_config.smtp.port}}'
+      SMTP_USER: '{{gitea_config.smtp.user}}'
+      SMTP_PASSWORD: '{{gitea_config.smtp.password}}'
+      SMTP_FROM_ADDRESS: '{{gitea_config.smtp.from_address}}'
+    community.docker.docker_compose:
+      project_name: gitea
+      project_src: '{{docker_compose_dir.path}}'
+      state: present
+
+  - name: Remove temporary Docker Compose directory
+    ansible.builtin.file:
+      path: '{{docker_compose_dir.path}}'
+      state: absent

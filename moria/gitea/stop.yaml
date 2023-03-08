@@ -1,0 +1,23 @@
+- name: Stop Gitea
+  hosts: Moria
+  tasks:
+  - name: Create temporary Docker Compose directory
+    ansible.builtin.tempfile:
+      state: directory
+    register: docker_compose_dir
+  - name: Copy docker-compose.yaml
+    ansible.builtin.copy:
+      src: src/docker-compose.yaml
+      dest: '{{docker_compose_dir.path}}/docker-compose.yaml'
+      mode: preserve
+
+  - name: Docker Compose down Gitea
+    community.docker.docker_compose:
+      project_name: gitea
+      project_src: '{{docker_compose_dir.path}}'
+      state: absent
+
+  - name: Remove temporary Docker Compose directory
+    ansible.builtin.file:
+      path: '{{docker_compose_dir.path}}'
+      state: absent

@@ -1,4 +1,0 @@
-- name: Remove Heimdall Docker volume
-  vars:
-    volume_name: homelab-heimdall-data
-  ansible.builtin.import_tasks: ../util/remove_docker_volume.yaml

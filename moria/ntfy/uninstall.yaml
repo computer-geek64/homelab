@@ -1,0 +1,62 @@
+- name: Stop Ntfy
+  ansible.builtin.import_playbook: stop.yaml
+
+- name: Uninstall Ntfy
+  hosts: Moria
+  tasks:
+  - name: Remove Nginx config file for Ntfy
+    become: true
+    ansible.builtin.file:
+      path: /data/nginx-config/ntfy.conf
+      state: absent
+  - name: Remove Ntfy config file
+    become: true
+    ansible.builtin.file:
+      path: /data/ntfy.yaml
+      state: absent
+
+  - name: Remove Ntfy cache Docker volume
+    community.docker.docker_volume:
+      volume_name: ntfy-cache
+      state: absent
+  - name: Remove Ntfy cache Docker volume directory
+    become: true
+    ansible.builtin.file:
+      path: /data/ntfy-cache
+      state: absent
+
+  - name: Read homelab config
+    ansible.builtin.slurp:
+      src: '{{ansible_user_dir}}/.homelab.json'
+    register: homelab_config_file
+  - name: Set homelab_config variable
+    ansible.builtin.set_fact:
+      homelab_config: '{{homelab_config_file.content|b64decode|from_json}}'
+
+  - name: Delete from Postgres table service_data
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      db: '{{homelab_config.database.name}}'
+      query: 'DELETE FROM service_data WHERE service = %s;'
+      positional_args:
+      - ntfy
+  - name: Delete from Postgres table service_port
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      db: '{{homelab_config.database.name}}'
+      query: 'DELETE FROM service_port WHERE service = %s;'
+      positional_args:
+      - ntfy
+  - name: Delete from Postgres table service
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      db: '{{homelab_config.database.name}}'
+      query: 'DELETE FROM service WHERE name = %s;'
+      positional_args:
+      - ntfy

@@ -1,0 +1,383 @@
+- name: Gather facts from all servers
+  hosts: all
+  vars_prompt:
+  - name: postgres_postgres_password
+    prompt: Enter password for Postgres user postgres
+  - name: postgres_ashish_password
+    prompt: Enter password for Postgres user ashish
+  - name: postgres_homelab_password
+    prompt: Enter password for Postgres user homelab
+  - name: postgres_dns_password
+    prompt: Enter password for Postgres user dns
+  tasks:
+  - name: Set variables as facts
+    ansible.builtin.set_fact:
+      postgres_postgres_password: '{{postgres_postgres_password}}'
+      postgres_ashish_password: '{{postgres_ashish_password}}'
+      postgres_homelab_password: '{{postgres_homelab_password}}'
+      postgres_dns_password: '{{postgres_dns_password}}'
+
+- name: Install Postgres
+  hosts: Erebor
+  tasks:
+  - name: Create Postgres data Docker volume directory
+    become: true
+    ansible.builtin.file:
+      path: /data/postgres-data
+      state: directory
+  - name: Create Postgres data Docker volume
+    community.docker.docker_volume:
+      volume_name: postgres-data
+      driver: local
+      driver_options:
+        type: none
+        o: bind
+        device: /data/postgres-data
+      state: present
+
+  - name: Start Postgres Docker container
+    community.docker.docker_container:
+      name: postgres
+      image: postgres:15.1
+      pull: true
+      restart_policy: unless-stopped
+      env:
+        POSTGRES_DB: postgres
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: '{{postgres_postgres_password}}'
+      volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+      published_ports:
+      - 127.0.0.1:5432:5432
+      keep_volumes: false
+      state: started
+
+  - name: Wait for Postgres to come online
+    ansible.builtin.wait_for:
+      port: 5432
+      delay: 3
+      state: started
+
+  - name: Create Postgres user ashish
+    community.postgresql.postgresql_user:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      login_db: postgres
+      name: ashish
+      password: '{{postgres_ashish_password}}'
+      role_attr_flags: SUPERUSER
+      state: present
+
+  - name: Create Postgres database homelab
+    community.postgresql.postgresql_db:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      maintenance_db: postgres
+      name: homelab
+      owner: ashish
+      state: present
+
+  - name: Create Postgres table network
+    community.postgresql.postgresql_table:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      table: network
+      columns:
+      - name varchar PRIMARY KEY
+      - dns varchar
+      - location varchar NOT NULL
+      owner: ashish
+      state: present
+  - name: Create Postgres table host
+    community.postgresql.postgresql_table:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      table: host
+      columns:
+      - hostname varchar PRIMARY KEY
+      - alias varchar UNIQUE
+      - description varchar
+      - ip varchar(15)
+      - mac char(17) UNIQUE
+      - network varchar REFERENCES network (name) ON UPDATE CASCADE
+      - service_user varchar
+      - wireguard_ip varchar(15)
+      - wireguard_private_key varchar
+      - wireguard_public_key varchar
+      owner: ashish
+      state: present
+  - name: Create Postgres table service
+    community.postgresql.postgresql_table:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      table: service
+      columns:
+      - name varchar PRIMARY KEY
+      - host varchar NOT NULL REFERENCES host (hostname) ON UPDATE CASCADE ON DELETE CASCADE
+      - config jsonb
+      owner: ashish
+      state: present
+  - name: Create Postgresql table service_port
+    community.postgresql.postgresql_table:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      table: service_port
+      columns:
+      - service varchar REFERENCES service (name) ON UPDATE CASCADE ON DELETE CASCADE
+      - port integer
+      - domain varchar
+      - reverse_proxy varchar REFERENCES service (name) ON UPDATE CASCADE ON DELETE CASCADE
+      - reverse_proxy_port integer
+      - PRIMARY KEY (service, port)
+      owner: ashish
+      state: present
+  - name: Check if Postgresql type storage_type already exists
+    community.postgresql.postgresql_query:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      query: "SELECT 1 FROM pg_type WHERE typname = 'storage_type';"
+    register: postgres_storage_type_check
+  - name: Create Postgresql type storage_type
+    community.postgresql.postgresql_query:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      query: "CREATE TYPE storage_type AS ENUM ('docker', 'path', 'database');"
+    when: postgres_storage_type_check.rowcount == 0
+  - name: Create Postgresql table service_data
+    community.postgresql.postgresql_table:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      table: service_data
+      columns:
+      - service varchar REFERENCES service (name) ON UPDATE CASCADE ON DELETE CASCADE
+      - data_name varchar
+      - storage_type storage_type NOT NULL
+      - source varchar NOT NULL
+      - PRIMARY KEY (service, data_name)
+      owner: ashish
+      state: present
+  - name: Create Postgresql table service_dependency
+    community.postgresql.postgresql_table:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      table: service_dependency
+      columns:
+      - service varchar REFERENCES service (name) ON UPDATE CASCADE ON DELETE CASCADE
+      - dependency varchar REFERENCES service (name) ON UPDATE CASCADE ON DELETE CASCADE
+      - PRIMARY KEY (service, dependency)
+      owner: ashish
+      state: present
+
+  - name: Create Postgres view service_discovery
+    community.postgresql.postgresql_query:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      query: "CREATE OR REPLACE VIEW service_discovery AS SELECT s.name AS service, sp.port AS service_port, CASE WHEN sp.domain IS NULL THEN concat(replace(replace(s.name, '_', '-'), '.', '-'), '.homelab.net') ELSE sp.domain END AS domain, CASE WHEN sp.reverse_proxy_port IS NULL THEN sp.port ELSE sp.reverse_proxy_port END AS port FROM service AS s INNER JOIN service_port AS sp ON s.name = sp.service;"
+  - name: Create Postgres view domain
+    community.postgresql.postgresql_query:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      query: "CREATE OR REPLACE VIEW domain AS SELECT DISTINCT lower(CASE WHEN sp.domain IS NULL THEN concat(replace(replace(s.name, '_', '-'), '.', '-'), '.homelab.net') ELSE sp.domain END) AS domain, CASE WHEN sp.reverse_proxy IS NULL THEN s.host ELSE rp.host END AS host FROM service AS s INNER JOIN service_port AS sp ON s.name = sp.service LEFT JOIN service AS rp ON sp.reverse_proxy = rp.name UNION SELECT lower(h.alias) AS domain, h.hostname AS host FROM host AS h WHERE h.alias IS NOT NULL;"
+  - name: Create Postgres view backup
+    community.postgresql.postgresql_query:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      query: "CREATE OR REPLACE VIEW backup AS SELECT concat(s.name, '_', sd.data_name) AS name, s.host, sd.storage_type, sd.source FROM service AS s INNER JOIN service_data AS sd ON s.name = sd.service;"
+
+  - name: Insert rows into Postgres table network
+    community.postgresql.postgresql_query:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      query: 'INSERT INTO network (name, dns, location) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;'
+      positional_args:
+      - '{{item.name}}'
+      - '{{item.dns}}'
+      - '{{item.location}}'
+    with_items:
+    - {name: Dsatp58, dns: 192.168.0.5, location: 'Winter Haven, FL'}
+  - name: Insert rows into Postgres table host
+    community.postgresql.postgresql_query:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      query: 'INSERT INTO host (hostname, alias, description, ip, mac, network, service_user, wireguard_ip) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;'
+      positional_args:
+      - '{{item.hostname}}'
+      - '{{item.alias}}'
+      - '{{item.description}}'
+      - '{{item.ip}}'
+      - '{{item.mac}}'
+      - '{{item.network}}'
+      - '{{item.service_user}}'
+      - '{{item.wireguard_ip}}'
+    with_items:
+    - {hostname: '{{hostvars.Erebor.ansible_hostname}}', alias: Erebor, description: Las Vegas VPS, ip: '{{hostvars.Erebor.ansible_facts.default_ipv4.address}}', mac: '{{hostvars.Erebor.ansible_facts.default_ipv4.macaddress}}', network: null, service_user: '{{hostvars.Erebor.ansible_user}}', wireguard_ip: '{{hostvars.Erebor.ansible_facts.wg0.ipv4.address}}'}
+    - {hostname: '{{hostvars.Moria.ansible_hostname}}', alias: Moria, description: Atlanta VPS, ip: '{{hostvars.Moria.ansible_facts.default_ipv4.address}}', mac: '{{hostvars.Moria.ansible_facts.default_ipv4.macaddress}}', network: null, service_user: '{{hostvars.Moria.ansible_user}}', wireguard_ip: '{{hostvars.Moria.ansible_facts.wg0.ipv4.address}}'}
+    - {hostname: '{{hostvars.Rivendell.ansible_hostname}}', alias: Rivendell, description: Asus Server, ip: '{{hostvars.Rivendell.ansible_facts.default_ipv4.address}}', mac: '{{hostvars.Rivendell.ansible_facts.default_ipv4.macaddress}}', network: Dsatp58, service_user: '{{hostvars.Rivendell.ansible_user}}', wireguard_ip: '{{hostvars.Rivendell.ansible_facts.wg0.ipv4.address}}'}
+    - {hostname: '{{hostvars.Isengard.ansible_hostname}}', alias: Isengard, description: NAS, ip: '{{hostvars.Isengard.ansible_facts.default_ipv4.address}}', mac: '{{hostvars.Isengard.ansible_facts.default_ipv4.macaddress}}', network: Dsatp58, service_user: '{{hostvars.Isengard.ansible_user}}', wireguard_ip: '{{hostvars.Isengard.ansible_facts.wg0.ipv4.address}}'}
+    - {hostname: '{{hostvars.Barad-dur.ansible_hostname}}', alias: Barad-dur, description: NVR, ip: '{{hostvars.Barad-dur.ansible_facts.default_ipv4.address}}', mac: '{{hostvars.Barad-dur.ansible_facts.default_ipv4.macaddress}}', network: Dsatp58, service_user: '{{hostvars.Barad-dur.ansible_user}}', wireguard_ip: '{{hostvars.Barad-dur.ansible_facts.wg0.ipv4.address}}'}
+  - name: Insert rows into Postgres table service
+    vars:
+      postgres_config:
+        users:
+          postgres:
+            password: '{{postgres_postgres_password}}'
+          ashish:
+            password: '{{postgres_ashish_password}}'
+          homelab:
+            password: '{{postgres_homelab_password}}'
+          dns:
+            password: '{{postgres_dns_password}}'
+    community.postgresql.postgresql_query:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      query: 'INSERT INTO service (name, host, config) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;'
+      positional_args:
+      - '{{item.name}}'
+      - '{{item.host}}'
+      - '{{item.config}}'
+    with_items:
+    - {name: postgres, host: '{{ansible_hostname}}', config: '{{postgres_config|to_json}}'}
+  - name: Insert rows into Postgres table service_port
+    community.postgresql.postgresql_query:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      query: 'INSERT INTO service_port (service, port, domain, reverse_proxy, reverse_proxy_port) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;'
+      positional_args:
+      - '{{item.service}}'
+      - '{{item.port}}'
+      - '{{item.domain}}'
+      - '{{item.reverse_proxy}}'
+      - '{{item.reverse_proxy_port}}'
+    with_items:
+    - {service: postgres, port: 5432, domain: null, reverse_proxy: null, reverse_proxy_port: null}
+  - name: Insert rows into Postgres table service_data
+    community.postgresql.postgresql_query:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      query: 'INSERT INTO service_data (service, data_name, storage_type, source) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING;'
+      positional_args:
+      - '{{item.service}}'
+      - '{{item.data_name}}'
+      - '{{item.storage_type}}'
+      - '{{item.source}}'
+    with_items:
+    - {service: postgres, data_name: data, storage_type: docker, source: postgres-data}
+
+  - name: Create Postgres user homelab
+    community.postgresql.postgresql_user:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      login_db: postgres
+      name: homelab
+      password: '{{postgres_homelab_password}}'
+      state: present
+  - name: Create Postgres user dns
+    community.postgresql.postgresql_user:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      login_db: postgres
+      name: dns
+      password: '{{postgres_dns_password}}'
+      state: present
+
+  - name: Grant Postgres privileges on database homelab to users homelab and dns
+    community.postgresql.postgresql_privs:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      type: database
+      objs: homelab
+      privs: CONNECT
+      roles: homelab,dns
+      state: present
+  - name: Grant Postgres privileges on tables network, host, service, service_port, service_data, service_dependency to user homelab
+    community.postgresql.postgresql_privs:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      type: table
+      objs: network,host,service,service_port,service_data,service_dependency
+      privs: SELECT,INSERT,UPDATE,DELETE
+      roles: homelab
+      state: present
+  - name: Grant Postgres privileges on views service_discovery, domain, backup to user homelab
+    community.postgresql.postgresql_privs:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      type: table
+      objs: service_discovery,domain,backup
+      privs: SELECT
+      roles: homelab
+      state: present
+  - name: Grant Postgres privileges on table host and view domain to user dns
+    community.postgresql.postgresql_privs:
+      login_host: localhost
+      login_user: postgres
+      login_password: '{{postgres_postgres_password}}'
+      db: homelab
+      type: table
+      objs: host,domain
+      privs: SELECT
+      roles: dns
+      state: present
+
+  - name: Remove Postgres Docker container
+    community.docker.docker_container:
+      name: postgres
+      state: absent
+
+- name: Install homelab config on all servers
+  hosts: all
+  tasks:
+  - name: Install .homelab.json on service user of all servers
+    vars:
+      homelab_config:
+        database:
+          host: '{{hostvars.Erebor.ansible_facts.wg0.ipv4.address}}'
+          user: homelab
+          password: '{{postgres_homelab_password}}'
+          name: homelab
+    ansible.builtin.copy:
+      content: '{{homelab_config|to_json}}'
+      dest: '{{ansible_user_dir}}/.homelab.json'

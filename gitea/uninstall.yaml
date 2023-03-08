@@ -1,4 +1,0 @@
-- name: Remove Gitea Docker volume
-  vars:
-    volume_name: homelab-gitea-data
-  ansible.builtin.import_tasks: ../util/remove_docker_volume.yaml

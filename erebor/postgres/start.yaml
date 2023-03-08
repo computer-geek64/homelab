@@ -1,0 +1,16 @@
+- name: Start Postgres
+  hosts: Erebor
+  tasks:
+  - name: Start Postgres Docker container
+    community.docker.docker_container:
+      name: postgres
+      image: postgres:15.1
+      restart_policy: unless-stopped
+      volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+      published_ports:
+      - 127.0.0.1:5432:5432
+      - '{{ansible_facts.wg0.ipv4.address}}:5432:5432'
+      keep_volumes: false
+      state: started

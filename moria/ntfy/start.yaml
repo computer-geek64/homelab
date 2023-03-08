@@ -1,0 +1,18 @@
+- name: Start Ntfy
+  hosts: Moria
+  tasks:
+  - name: Start Ntfy Docker container
+    community.docker.docker_container:
+      name: ntfy
+      image: binwiederhier/ntfy:v2.1.2
+      restart_policy: unless-stopped
+      command:
+      - serve
+      volumes:
+      - /data/ntfy.yaml:/etc/ntfy/server.yaml:ro
+      - ntfy-cache:/var/cache/ntfy
+      - /etc/localtime:/etc/localtime:ro
+      published_ports:
+      - 127.0.0.1:10002:80
+      keep_volumes: false
+      state: started

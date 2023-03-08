@@ -1,0 +1,5 @@
+base-url: https://ntfy.homelab.net
+cache-file: /var/cache/ntfy/cache.db
+attachment-cache-dir: /var/cache/ntfy/attachments
+attachment-expiry-duration: 12h
+behind-proxy: true
