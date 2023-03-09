@@ -6,8 +6,11 @@
       name: uptime-kuma
       image: louislam/uptime-kuma:1.20.1
       restart_policy: unless-stopped
+      env:
+        NODE_EXTRA_CA_CERTS: /certs/homelab_ca.crt
       volumes:
       - uptime-kuma-data:/app/data
+      - /etc/pki/ca-trust/source/anchors/homelab_ca.crt:/certs/homelab_ca.crt:ro
       - /etc/localtime:/etc/localtime:ro
       published_ports:
       - 127.0.0.1:10001:3001
