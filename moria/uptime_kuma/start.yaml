@@ -10,7 +10,7 @@
         NODE_EXTRA_CA_CERTS: /certs/homelab_ca.crt
       volumes:
       - uptime-kuma-data:/app/data
-      - /etc/pki/ca-trust/source/anchors/homelab_ca.crt:/certs/homelab_ca.crt:ro
+      - /data/certs/homelab_ca.crt:/certs/homelab_ca.crt:ro
       - /etc/localtime:/etc/localtime:ro
       published_ports:
       - 127.0.0.1:10001:3001

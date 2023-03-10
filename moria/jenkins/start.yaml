@@ -10,9 +10,15 @@
         JAVA_OPTS: -Xmx384m
       volumes:
       - jenkins-data:/var/jenkins_home
+      - /data/certs/homelab_ca.crt:/usr/local/share/ca-certificates/homelab_ca.crt:ro
       - /etc/localtime:/etc/localtime:ro
       published_ports:
       - 127.0.0.1:10004:8080
       keep_volumes: false
       state: started
 
+  - name: Update CA certificates
+    community.docker.docker_container_exec:
+      container: jenkins
+      command: update-ca-certificates
+      user: root

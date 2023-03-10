@@ -29,10 +29,6 @@
       dest: /data/nginx-config
       mode: preserve
 
-  - name: Print message
-    ansible.builtin.debug:
-      msg: Install certificates under /data/nginx-config
-
   - name: Read homelab config
     ansible.builtin.slurp:
       src: '{{ansible_user_dir}}/.homelab.json'
