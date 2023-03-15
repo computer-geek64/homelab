@@ -1,0 +1,7 @@
+- name: Reload Nginx
+  hosts: Rivendell
+  tasks:
+  - name: Reload Nginx inside Docker container
+    community.docker.docker_container_exec:
+      container: nginx
+      command: nginx -s reload

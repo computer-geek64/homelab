@@ -1,5 +1,5 @@
 - name: Install Unbound
-  hosts: Erebor
+  hosts: Rivendell
   tasks:
   - name: Create temporary build directory
     ansible.builtin.tempfile:
@@ -66,7 +66,7 @@
       - '{{item.host}}'
       - '{{item.config}}'
     with_items:
-    - {name: unbound_erebor, host: '{{ansible_hostname}}', config: '{{unbound_config|to_json}}'}
+    - {name: unbound_rivendell, host: '{{ansible_hostname}}', config: '{{unbound_config|to_json}}'}
   - name: Insert into Postgres table service_port
     community.postgresql.postgresql_query:
       login_host: '{{homelab_config.database.host}}'
@@ -81,4 +81,4 @@
       - '{{item.reverse_proxy}}'
       - '{{item.reverse_proxy_port}}'
     with_items:
-    - {service: unbound_erebor, port: 53, domain: null, reverse_proxy: null, reverse_proxy_port: null}
+    - {service: unbound_rivendell, port: 53, domain: null, reverse_proxy: null, reverse_proxy_port: null}

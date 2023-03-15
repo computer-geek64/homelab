@@ -1,0 +1,7 @@
+- name: Stop Nginx
+  hosts: Isengard
+  tasks:
+  - name: Stop Nginx Docker container
+    community.docker.docker_container:
+      name: nginx
+      state: absent

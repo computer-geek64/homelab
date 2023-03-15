@@ -1,26 +1,42 @@
-- name: Stop Unbound
+- name: Stop Nginx
   ansible.builtin.import_playbook: stop.yaml
 
-- name: Uninstall Unbound
-  hosts: Erebor
+- name: Uninstall Nginx
+  hosts: Isengard
   tasks:
+  - name: Remove Nginx config file
+    become: true
+    ansible.builtin.file:
+      path: /data/nginx.conf
+      state: absent
+
+  - name: Remove Nginx config Docker volume
+    community.docker.docker_volume:
+      volume_name: nginx-config
+      state: absent
+  - name: Remove Nginx config Docker volume directory
+    become: true
+    ansible.builtin.file:
+      path: /data/nginx-config
+      state: absent
+
   - name: Read homelab config
-    ansible.builtin.slurp:
+    ansible.builtiln.slurp:
       src: '{{ansible_user_dir}}/.homelab.json'
     register: homelab_config_file
   - name: Set homelab_config variable
     ansible.builtin.set_fact:
       homelab_config: '{{homelab_config_file.content|b64decode|from_json}}'
 
-  - name: Delete from Postgres table service_port
+  - name: Delete from Postgres table service_data
     community.postgresql.postgresql_query:
       login_host: '{{homelab_config.database.host}}'
       login_user: '{{homelab_config.database.user}}'
       login_password: '{{homelab_config.database.password}}'
       db: '{{homelab_config.database.name}}'
-      query: 'DELETE FROM service_port WHERE service = %s;'
+      query: 'DELETE FROM service_data WHERE service = %s;'
       positional_args:
-      - unbound_erebor
+      - nginx_isengard
   - name: Delete from Postgres table service
     community.postgresql.postgresql_query:
       login_host: '{{homelab_config.database.host}}'
@@ -29,4 +45,4 @@
       db: '{{homelab_config.database.name}}'
       query: 'DELETE FROM service WHERE name = %s;'
       positional_args:
-      - unbound_erebor
+      - nginx_isengard

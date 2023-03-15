@@ -1,0 +1,66 @@
+- name: Install Nginx
+  hosts: Isengard
+  tasks:
+  - name: Create Nginx config Docker volume directory
+    become: true
+    ansible.builtin.file:
+      path: /data/nginx-config
+      state: directory
+  - name: Create Nginx config Docker volume
+    community.docker.docker_volume:
+      volume_name: nginx-config
+      driver: local
+      driver_options:
+        type: none
+        o: bind
+        device: /data/nginx-config
+      state: present
+
+  - name: Copy Nginx config file
+    become: true
+    ansible.builtin.copy:
+      src: src/nginx.conf
+      dest: /data/nginx.conf
+      mode: preserve
+  - name: Copy Nginx config directory
+    become: true
+    ansible.builtin.copy:
+      src: src/conf.d/
+      dest: /data/nginx-config/
+      mode: preserve
+
+  - name: Read homelab config
+    ansible.builtin.slurp:
+      src: '{{ansible_user_dir}}/.homelab.json'
+    register: homelab_config_file
+  - name: Set homelab_config variable
+    ansible.builtin.set_fact:
+      homelab_config: '{{homelab_config_file.content|b64decode|from_json}}'
+
+  - name: Insert into Postgres table service
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      db: '{{homelab_config.database.name}}'
+      query: 'INSERT INTO service (name, host, config) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;'
+      positional_args:
+      - '{{item.name}}'
+      - '{{item.host}}'
+      - '{{item.config}}'
+    with_items:
+    - {name: nginx_isengard, host: '{{ansible_hostname}}', config: null}
+  - name: Insert into Postgres table service_data
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      db: '{{homelab_config.database.name}}'
+      query: 'INSERT INTO service_data (service, data_name, storage_type, source) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING;'
+      positional_args:
+      - '{{item.service}}'
+      - '{{item.data_name}}'
+      - '{{item.storage_type}}'
+      - '{{item.source}}'
+    with_items:
+    - {service: nginx_isengard, data_name: config, storage_type: docker, source: nginx-config}

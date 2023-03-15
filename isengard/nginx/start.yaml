@@ -1,5 +1,5 @@
 - name: Start Nginx
-  hosts: Moria
+  hosts: Isengard
   tasks:
   - name: Start Nginx Docker container
     community.docker.docker_container:
@@ -9,8 +9,7 @@
       volumes:
       - /data/nginx.conf:/etc/nginx/nginx.conf:ro
       - nginx-config:/etc/nginx/conf.d:ro
-      - /data/certs:/certs:ro
-      - /srv/http:/srv/http:ro
+      - /srv/dev-disk-by-uuid-60d15a0f-204c-4b55-b489-cbb2404cfa4f/certs:/certs:ro
       - /etc/localtime:/etc/localtime:ro
       network_mode: host
       keep_volumes: false

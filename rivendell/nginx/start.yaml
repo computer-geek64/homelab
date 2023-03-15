@@ -1,5 +1,5 @@
 - name: Start Nginx
-  hosts: Moria
+  hosts: Rivendell
   tasks:
   - name: Start Nginx Docker container
     community.docker.docker_container:
@@ -10,7 +10,6 @@
       - /data/nginx.conf:/etc/nginx/nginx.conf:ro
       - nginx-config:/etc/nginx/conf.d:ro
       - /data/certs:/certs:ro
-      - /srv/http:/srv/http:ro
       - /etc/localtime:/etc/localtime:ro
       network_mode: host
       keep_volumes: false
