@@ -1,0 +1,7 @@
+- name: Stop Nginx
+  hosts: Utumno
+  tasks:
+  - name: Stop Nginx Docker container
+    community.docker.docker_container:
+      name: nginx
+      state: absent
