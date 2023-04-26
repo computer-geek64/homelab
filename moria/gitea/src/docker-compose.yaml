@@ -23,6 +23,7 @@ services:
       GITEA__mailer__USER: ${SMTP_USER}
       GITEA__mailer__PASSWD: ${SMTP_PASSWORD}
       GITEA__mailer__FROM: ${SMTP_FROM_ADDRESS}
+      GITEA__repository__DEFAULT_BRANCH: master
       GITEA__webhook__ALLOWED_HOST_LIST: '*'
       GITEA__webhook__SKIP_TLS_VERIFY: 'true'
       APP_NAME: Gitea
