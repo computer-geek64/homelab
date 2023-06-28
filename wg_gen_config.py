@@ -7,7 +7,7 @@ import psycopg2
 from getpass import getpass
 
 
-WIREGUARD_ENDPOINT = 'ashish-vpn.ddns.net:51820'
+WIREGUARD_ENDPOINT = '205.185.115.161:51820'
 DNS = '192.168.2.1'
 
 POSTGRES_HOST = os.environ.get('POSTGRES_HOST', 'postgres.homelab.net')
@@ -45,7 +45,7 @@ class WireguardHost:
 
     def write(self):
         print('[Interface]')
-        print(f'# {self.hostname} ({self.alias}): {self.description}')
+        print(f'# {self.hostname}' + (f' ({self.alias})' if self.alias is not None else '') + (f': {self.description}' if self.description is not None else ''))
         print(f'PrivateKey = {self.private_key}')
         print(f'Address = {self.ip}')
         if self.is_server:
@@ -54,9 +54,13 @@ class WireguardHost:
             print(f'DNS = {DNS}')
 
         for peer in self.peers:
+            name = peer.pop('name')
+            alias = peer.pop('alias')
+            description = peer.pop('description')
+
             print()
             print('[Peer]')
-            print('# ' + peer.pop('name') + ' (' + peer.pop('alias') + '): ' + peer.pop('description'))
+            print(f'# {name}' + (f' ({alias})' if alias is not None else '') + (f': {description}' if description is not None else ''))
             for key, value in peer.items():
                 print(f'{key} = {value}')
 
