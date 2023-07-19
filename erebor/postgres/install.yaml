@@ -123,6 +123,7 @@
       columns:
       - name varchar PRIMARY KEY
       - host varchar NOT NULL REFERENCES host (hostname) ON UPDATE CASCADE ON DELETE CASCADE
+      - source varchar
       - config jsonb
       owner: ashish
       state: present

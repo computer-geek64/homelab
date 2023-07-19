@@ -34,6 +34,7 @@ CREATE TABLE host (
 CREATE TABLE service (
     name varchar PRIMARY KEY,
     host varchar NOT NULL REFERENCES host (hostname) ON UPDATE CASCADE ON DELETE CASCADE,
+    source varchar,
     config jsonb
 );
 
