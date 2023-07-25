@@ -2,7 +2,7 @@ all:
   hosts:
     Erebor:
       ansible_user: thror
-      ansible_host: 205.185.115.161
+      ansible_host: 45.61.187.169
       ansible_python_interpreter: /usr/bin/python3
     Moria:
       ansible_user: durin
