@@ -7,7 +7,7 @@ import psycopg2
 from getpass import getpass
 
 
-WIREGUARD_ENDPOINT = '205.185.115.161:51820'
+WIREGUARD_ENDPOINT = '45.61.187.169:51820'
 DNS = '192.168.2.1'
 
 POSTGRES_HOST = os.environ.get('POSTGRES_HOST', 'postgres.homelab.net')
