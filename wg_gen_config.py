@@ -36,7 +36,7 @@ class WireguardHost:
             # Peers query
             if self.ip == DNS:  # If host is Wireguard server
                 self.is_server = True
-                cursor.execute('SELECT h.hostname, h.alias, h.description, h.wireguard_ip, h.wireguard_public_key FROM host AS h WHERE h.hostname != %s AND h.wireguard_ip IS NOT NULL;', (self.hostname,))
+                cursor.execute('SELECT h.hostname, h.alias, h.description, h.wireguard_ip, h.wireguard_public_key FROM host AS h WHERE h.hostname != %s AND h.wireguard_ip IS NOT NULL ORDER BY h.wireguard_ip::inet;', (self.hostname,))
                 self.peers = [{'name': name, 'alias': alias, 'description': description, 'AllowedIPs': f'{ip}/32', 'PublicKey': public_key} for name, alias, description, ip, public_key in cursor.fetchall()]
             else:
                 self.is_server = False
