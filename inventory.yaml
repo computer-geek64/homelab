@@ -24,12 +24,20 @@ all:
       ansible_user: melkor
       ansible_host: 192.168.2.6
       ansible_python_interpreter: /usr/bin/python3
+    Lothlorien:
+      ansible_user: galadriel
+      ansible_host: 192.168.2.7
+      ansible_python_interpreter: /usr/bin/python3
 
 home:
   hosts:
     Rivendell:
     Isengard:
     Barad-dur:
+
+apartment:
+  hosts:
+    Lothlorien:
 
 cloud:
   hosts:
@@ -43,13 +51,15 @@ on_prem:
 northeast:
   hosts:
 south:
+  children:
+    home:
   hosts:
     Moria:
-    Rivendell:
-    Isengard:
-    Barad-dur:
 midwest:
   hosts:
+    apartment:
 west:
   hosts:
-    Erebor:
+international:
+  hosts:
+    Utumno:
