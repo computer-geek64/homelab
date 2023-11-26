@@ -1,5 +1,5 @@
 - name: Install Nginx
-  hosts: Isengard
+  hosts: Lothlorien
   tasks:
   - name: Create Nginx config Docker volume directory
     become: true
@@ -49,7 +49,7 @@
       - '{{item.host}}'
       - '{{item.config}}'
     with_items:
-    - {name: nginx_isengard, host: '{{ansible_hostname}}', config: null}
+    - {name: nginx_lothlorien, host: '{{ansible_hostname}}', config: null}
   - name: Insert into Postgres table service_data
     community.postgresql.postgresql_query:
       login_host: '{{homelab_config.database.host}}'
@@ -63,4 +63,4 @@
       - '{{item.storage_type}}'
       - '{{item.source}}'
     with_items:
-    - {service: nginx_isengard, data_name: config, storage_type: docker, source: nginx-config}
+    - {service: nginx_lothlorien, data_name: config, storage_type: docker, source: nginx-config}

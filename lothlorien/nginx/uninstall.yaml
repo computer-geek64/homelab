@@ -2,7 +2,7 @@
   ansible.builtin.import_playbook: stop.yaml
 
 - name: Uninstall Nginx
-  hosts: Isengard
+  hosts: Lothlorien
   tasks:
   - name: Remove Nginx config file
     become: true
@@ -36,7 +36,7 @@
       db: '{{homelab_config.database.name}}'
       query: 'DELETE FROM service_data WHERE service = %s;'
       positional_args:
-      - nginx_isengard
+      - nginx_lothlorien
   - name: Delete from Postgres table service
     community.postgresql.postgresql_query:
       login_host: '{{homelab_config.database.host}}'
@@ -45,4 +45,4 @@
       db: '{{homelab_config.database.name}}'
       query: 'DELETE FROM service WHERE name = %s;'
       positional_args:
-      - nginx_isengard
+      - nginx_lothlorien

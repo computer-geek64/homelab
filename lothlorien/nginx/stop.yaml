@@ -1,5 +1,5 @@
 - name: Stop Nginx
-  hosts: Isengard
+  hosts: Lothlorien
   tasks:
   - name: Stop Nginx Docker container
     community.docker.docker_container:
