@@ -21,7 +21,7 @@
       state: absent
 
   - name: Read homelab config
-    ansible.builtiln.slurp:
+    ansible.builtin.slurp:
       src: '{{ansible_user_dir}}/.homelab.json'
     register: homelab_config_file
   - name: Set homelab_config variable

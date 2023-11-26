@@ -43,13 +43,14 @@
       login_user: '{{homelab_config.database.user}}'
       login_password: '{{homelab_config.database.password}}'
       db: '{{homelab_config.database.name}}'
-      query: 'INSERT INTO service (name, host, config) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;'
+      query: 'INSERT INTO service (name, host, source, config) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING;'
       positional_args:
       - '{{item.name}}'
       - '{{item.host}}'
+      - '{{item.source}}'
       - '{{item.config}}'
     with_items:
-    - {name: nginx_moria, host: '{{ansible_hostname}}', config: null}
+    - {name: nginx_moria, host: '{{ansible_hostname}}', source: github/computer-geek64/homelab/master/moria/nginx, config: null}
   - name: Insert into Postgres table service_data
     community.postgresql.postgresql_query:
       login_host: '{{homelab_config.database.host}}'
