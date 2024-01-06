@@ -28,12 +28,17 @@ all:
       ansible_user: galadriel
       ansible_host: 192.168.2.7
       ansible_python_interpreter: /usr/bin/python3
+    Hobbiton:
+      ansible_user: bilbo
+      ansible_host: 192.168.2.8
+      ansible_python_interpreter: /usr/bin/python3
 
 home:
   hosts:
     Rivendell:
     Isengard:
     Barad-dur:
+    Hobbiton:
 
 apartment:
   hosts:
@@ -47,6 +52,7 @@ cloud:
 on_prem:
   children:
     home:
+    apartment:
 
 northeast:
   hosts:
