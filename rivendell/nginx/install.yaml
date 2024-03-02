@@ -15,6 +15,20 @@
         o: bind
         device: /data/nginx-config
       state: present
+  - name: Create Nginx static Docker volume directory
+    become: true
+    ansible.builtin.file:
+      path: /data/nginx-static
+      state: directory
+  - name: Create Nginx static Docker volume
+    community.docker.docker_volume:
+      volume_name: nginx-static
+      driver: local
+      driver_options:
+        type: none
+        o: bind
+        device: /data/nginx-static
+      state: present
 
   - name: Copy Nginx config file
     become: true
@@ -65,3 +79,4 @@
       - '{{item.source}}'
     with_items:
     - {service: nginx_rivendell, data_name: config, storage_type: docker, source: nginx-config}
+    - {service: nginx_rivendell, data_name: static, storage_type: docker, source: nginx-static}

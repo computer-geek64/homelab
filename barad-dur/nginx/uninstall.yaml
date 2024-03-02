@@ -19,6 +19,15 @@
     ansible.builtin.file:
       path: /data/nginx-config
       state: absent
+  - name: Remove Nginx static Docker volume
+    community.docker.docker_volume:
+      volume_name: nginx-static
+      state: absent
+  - name: Remove Nginx static Docker volume directory
+    become: true
+    ansible.builtin.file:
+      path: /data/nginx-static
+      state: absent
 
   - name: Read homelab config
     ansible.builtin.slurp:
