@@ -1,0 +1,62 @@
+- name: Backup
+  hosts: Moria
+  vars:
+    borg_user: borg
+    borg_host: erebor
+    borg_ssh_key_path: '{{ansible_user_dir}}/.ssh/borg_id_rsa'
+    borg_repo_path: /mnt/borg
+    borg_archive_name: '{{ansible_date_time.epoch}}'
+  vars_prompt:
+  - name: service_name
+    prompt: Enter service name
+    private: false
+  - name: borg_password
+    prompt: Enter Borg password
+  tasks:
+  - name: Read homelab config
+    ansible.builtin.slurp:
+      src: '{{ansible_user_dir}}/.homelab.json'
+    register: homelab_config_file
+  - name: Set homelab_config variable
+    ansible.builtin.set_fact:
+      homelab_config: '{{homelab_config_file.content|b64decode|from_json}}'
+
+  - name: Query service data
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      db: '{{homelab_config.database.name}}'
+      query: "SELECT storage_type, source FROM service_data WHERE service = '{{service_name}}';"
+    register: service_data_query
+
+  - name: Get Docker volume paths
+    community.docker.docker_volume_info:
+      name: '{{item.source}}'
+    when: item.storage_type == 'docker'
+    loop: '{{service_data_query.query_result}}'
+    register: volumes_info
+
+  - name: Set Borg command
+    ansible.builtin.set_fact:
+      borg_command: 'borg create --progress {{borg_user}}@{{borg_host}}:{{borg_repo_path}}/{{service_name}}::{{borg_archive_name}}'
+
+  - name: Add paths to command
+    ansible.builtin.set_fact:
+      borg_command: "{{borg_command}} '{{item.source}}'"
+    when: item.storage_type == 'path'
+    loop: '{{service_data_query.query_result}}'
+
+  - name: Add Docker volume paths to command
+    ansible.builtin.set_fact:
+      borg_command: "{{borg_command}} '{{item.volume.Options.device}}'"
+    when: item.volume.Options.type == 'none'
+    loop: '{{volumes_info.results}}'
+
+  - name: Run Borg backup
+    environment:
+      BORG_RSH: "ssh -i '{{borg_ssh_key_path}}' -o 'ServerAliveInterval=15' -o 'ServerAliveCountMax=4' -o 'StrictHostKeyChecking=no'"
+      BORG_PASSPHRASE: '{{borg_password}}'
+    become: true
+    ansible.builtin.command:
+      cmd: '{{borg_command}}'
