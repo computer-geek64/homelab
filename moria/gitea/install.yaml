@@ -47,9 +47,15 @@
   - name: Copy Nginx config file for Gitea
     become: true
     ansible.builtin.copy:
-      src: src/nginx.conf
+      src: conf/nginx.conf
       dest: /data/nginx-config/gitea.conf
       mode: preserve
+  - name: Synchronize Nginx static files
+    become: true
+    ansible.posix.synchronize:
+      src: static/
+      dest: /data/nginx-static/gitea/
+      delete: true
 
   - name: Read homelab config
     ansible.builtin.slurp:

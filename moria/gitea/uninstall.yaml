@@ -9,6 +9,11 @@
     ansible.builtin.file:
       path: /data/nginx-config/gitea.conf
       state: absent
+  - name: Remove Nginx static files
+    become: true
+    ansible.builtin.file:
+      path: /data/nginx-static/gitea
+      state: absent
 
   - name: Remove Gitea data Docker volume
     community.docker.docker_volume:
