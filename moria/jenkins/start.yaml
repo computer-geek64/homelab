@@ -4,7 +4,7 @@
   - name: Start Jenkins Docker container
     community.docker.docker_container:
       name: jenkins
-      image: jenkins/jenkins:lts-jdk11
+      image: jenkins/jenkins:lts-jdk21
       restart_policy: unless-stopped
       env:
         JAVA_OPTS: -Xmx384m
