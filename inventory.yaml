@@ -62,7 +62,7 @@ south:
   hosts:
     Moria:
 midwest:
-  hosts:
+  children:
     apartment:
 west:
   hosts:
