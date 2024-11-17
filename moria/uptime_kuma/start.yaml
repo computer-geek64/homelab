@@ -4,7 +4,7 @@
   - name: Start Uptime Kuma Docker container
     community.docker.docker_container:
       name: uptime-kuma
-      image: louislam/uptime-kuma:1.22.1
+      image: louislam/uptime-kuma:1.23.15
       restart_policy: unless-stopped
       env:
         NODE_EXTRA_CA_CERTS: /certs/homelab_ca.crt
