@@ -32,6 +32,18 @@ all:
       ansible_user: bilbo
       ansible_host: 192.168.2.8
       ansible_python_interpreter: /usr/bin/python3
+    Gondolin:
+      ansible_user: turgon
+      ansible_host: 192.168.2.9
+      ansible_python_interpreter: /usr/bin/python3
+    Gundabad:
+      ansible_user: durin
+      ansible_host: 192.168.2.10
+      ansible_python_interpreter: /usr/bin/python3
+    Edoras:
+      ansible_user: theoden
+      ansible_hst: 192.168.2.15
+      ansible_python_interpreter: /usr/bin/python3
 
 home:
   hosts:
@@ -39,6 +51,7 @@ home:
     Isengard:
     Barad-dur:
     Hobbiton:
+    Edoras:
 
 apartment:
   hosts:
@@ -49,6 +62,8 @@ cloud:
     Erebor:
     Moria:
     Utumno:
+    Gondolin:
+    Gundabad:
 on_prem:
   children:
     home:
@@ -69,3 +84,5 @@ west:
 international:
   hosts:
     Utumno:
+    Gondolin:
+    Gundabad:
