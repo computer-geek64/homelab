@@ -1,8 +1,8 @@
 - name: Backup
-  hosts: Utumno
+  hosts: Gundabad
   vars:
     borg_user: borg
-    borg_host: 192.168.2.10
+    borg_host: localhost
     borg_ssh_key_path: '{{ansible_user_dir}}/.ssh/borg_id_rsa'
     borg_repo_path: /backup/borg/services
   vars_prompt:

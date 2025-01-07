@@ -1,5 +1,5 @@
 - name: Backup
-  hosts: Utumno
+  hosts: Edoras
   vars:
     borg_user: borg
     borg_host: 192.168.2.10
