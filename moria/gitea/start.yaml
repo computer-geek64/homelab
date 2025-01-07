@@ -41,7 +41,7 @@
       SMTP_USER: '{{gitea_config.smtp.user}}'
       SMTP_PASSWORD: '{{gitea_config.smtp.password}}'
       SMTP_FROM_ADDRESS: '{{gitea_config.smtp.from_address}}'
-    community.docker.docker_compose:
+    community.docker.docker_compose_v2:
       project_name: gitea
       project_src: '{{docker_compose_dir.path}}'
       state: present

@@ -12,7 +12,7 @@
       mode: preserve
 
   - name: Docker Compose down Gitea
-    community.docker.docker_compose:
+    community.docker.docker_compose_v2:
       project_name: gitea
       project_src: '{{docker_compose_dir.path}}'
       state: absent
