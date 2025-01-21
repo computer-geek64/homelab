@@ -2,23 +2,23 @@ all:
   hosts:
     Erebor:
       ansible_user: thror
-      ansible_host: 45.61.187.169
-      ansible_python_interpreter: /usr/bin/python3
-    Moria:
-      ansible_user: durin
-      ansible_host: 192.210.213.169
+      ansible_host: 192.168.2.1
       ansible_python_interpreter: /usr/bin/python3
     Rivendell:
       ansible_user: elrond
       ansible_host: 192.168.2.2
       ansible_python_interpreter: /usr/bin/python3
     Isengard:
-      ansible_user: saruman
+      ansible_user: ashish
       ansible_host: 192.168.2.3
       ansible_python_interpreter: /usr/bin/python3
     Barad-dur:
       ansible_user: sauron
       ansible_host: 192.168.2.4
+      ansible_python_interpreter: /usr/bin/python3
+    Moria:
+      ansible_user: durin
+      ansible_host: 192.168.2.5
       ansible_python_interpreter: /usr/bin/python3
     Utumno:
       ansible_user: melkor
@@ -42,7 +42,7 @@ all:
       ansible_python_interpreter: /usr/bin/python3
     Edoras:
       ansible_user: theoden
-      ansible_hst: 192.168.2.15
+      ansible_host: 192.168.2.15
       ansible_python_interpreter: /usr/bin/python3
 
 home:
