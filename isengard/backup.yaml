@@ -1,0 +1,41 @@
+- name: Backup
+  hosts: Isengard
+  vars:
+    borg_user: borg
+    borg_host: borg.ashishdsouza.com
+    borg_ssh_key_path: '{{ansible_user_dir}}/.ssh/borg_id_rsa'
+    borg_repo_path: /backup/borg/nas
+    borg_command_flags:
+      - -c 60
+    borg_binary: /usr/local/bin/borg
+    shared_folder_prefix: /volume1
+  vars_prompt:
+    - name: shared_folder
+      prompt: Enter shared folder
+      private: false
+    - name: borg_archive_name
+      prompt: Enter Borg archive name
+      private: false
+    - name: borg_archive_comment
+      prompt: Enter Borg archive comment
+      private: false
+    - name: borg_password
+      prompt: Enter Borg password
+  tasks:
+    - name: Add comment to Borg command flags
+      vars:
+        borg_command_comment_flag: "--comment '{{borg_archive_comment}}'"
+      ansible.builtin.set_fact:
+        borg_command_flags: '{{borg_command_flags + [borg_command_comment_flag]}}'
+      when: borg_archive_comment
+
+    - name: Set Borg command
+      ansible.builtin.set_fact:
+        borg_command: '{{borg_binary}} create {{borg_command_flags | join(" ")}} {{borg_user}}@{{borg_host}}:{{borg_repo_path}}/{{shared_folder}}::{{borg_archive_name if borg_archive_name else ansible_date_time.epoch}} "{{shared_folder_prefix}}/{{shared_folder}}"'
+
+    - name: Run Borg backup
+      environment:
+        BORG_RSH: "ssh -i '{{borg_ssh_key_path}}' -o 'ServerAliveInterval=15' -o 'ServerAliveCountMax=4' -o 'StrictHostKeyChecking=no'"
+        BORG_PASSPHRASE: '{{borg_password}}'
+      ansible.builtin.command:
+        cmd: 'sudo -E {{borg_command}}'
