@@ -2,15 +2,20 @@
   hosts: Barad-dur
   vars:
     borg_user: borg
-    borg_host: 192.168.2.10
+    borg_host: borg.ashishdsouza.com
     borg_ssh_key_path: '{{ansible_user_dir}}/.ssh/borg_id_rsa'
     borg_repo_path: /backup/borg/services
+    borg_command_flags:
+      - -c 60
   vars_prompt:
     - name: service_name
       prompt: Enter service name
       private: false
     - name: borg_archive_name
       prompt: Enter Borg archive name
+      private: false
+    - name: borg_archive_comment
+      prompt: Enter Borg archive comment
       private: false
     - name: borg_password
       prompt: Enter Borg password
@@ -39,9 +44,16 @@
       loop: '{{service_data_query.query_result}}'
       register: volumes_info
 
+    - name: Add comment to Borg command flags
+      vars:
+        borg_command_comment_flag: "--comment '{{borg_archive_comment}}'"
+      ansible.builtin.set_fact:
+        borg_command_flags: '{{borg_command_flags + [borg_command_comment_flag]}}'
+      when: borg_archive_comment
+
     - name: Set Borg command
       ansible.builtin.set_fact:
-        borg_command: 'borg create --progress {{borg_user}}@{{borg_host}}:{{borg_repo_path}}/{{service_name}}::{{borg_archive_name if borg_archive_name else ansible_date_time.epoch}}'
+        borg_command: 'borg create {{borg_command_flags | join(" ")}} {{borg_user}}@{{borg_host}}:{{borg_repo_path}}/{{service_name}}::{{borg_archive_name if borg_archive_name else ansible_date_time.epoch}}'
 
     - name: Add paths to command
       ansible.builtin.set_fact:
