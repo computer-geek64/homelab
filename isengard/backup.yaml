@@ -37,5 +37,6 @@
       environment:
         BORG_RSH: "ssh -i '{{borg_ssh_key_path}}' -o 'ServerAliveInterval=15' -o 'ServerAliveCountMax=4' -o 'StrictHostKeyChecking=no'"
         BORG_PASSPHRASE: '{{borg_password}}'
+        BORG_RELOCATED_REPO_ACCESS_IS_OK: 'yes'
       ansible.builtin.command:
         cmd: 'sudo -E {{borg_command}}'
