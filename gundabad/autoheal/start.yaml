@@ -1,0 +1,17 @@
+- name: Start Autoheal
+  hosts: Gundabad
+  tasks:
+    - name: Start Autoheal Docker container
+      community.docker.docker_container:
+        name: autoheal
+        image: willfarrell/autoheal:latest@sha256:b3e59477946ff36c1f097ad2a79833acc9939d5aa969eaf89ce639cae6c8192d
+        restart_policy: unless-stopped
+        env:
+          AUTOHEAL_INTERVAL: '30'
+          AUTOHEAL_START_PERIOD: '60'
+          AUTOHEAL_CONTAINER_LABEL: autoheal
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+        network_mode: none
+        keep_volumes: false
+        state: started

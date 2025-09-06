@@ -1,0 +1,7 @@
+- name: Stop Autoheal
+  hosts: Gondolin
+  tasks:
+    - name: Stop Autoheal Docker container
+      community.docker.docker_container:
+        name: autoheal
+        state: absent
