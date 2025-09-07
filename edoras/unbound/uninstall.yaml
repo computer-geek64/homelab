@@ -2,7 +2,7 @@
   ansible.builtin.import_playbook: stop.yaml
 
 - name: Uninstall Unbound
-  hosts: Rivendell
+  hosts: Edoras
   tasks:
   - name: Read homelab config
     ansible.builtin.slurp:
@@ -20,7 +20,7 @@
       login_db: '{{homelab_config.database.name}}'
       query: 'DELETE FROM service_port WHERE service = %s;'
       positional_args:
-      - unbound_rivendell
+      - unbound_edoras
   - name: Delete from Postgres table service
     community.postgresql.postgresql_query:
       login_host: '{{homelab_config.database.host}}'
@@ -29,4 +29,4 @@
       login_db: '{{homelab_config.database.name}}'
       query: 'DELETE FROM service WHERE name = %s;'
       positional_args:
-      - unbound_rivendell
+      - unbound_edoras

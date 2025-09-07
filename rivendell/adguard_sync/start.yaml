@@ -1,0 +1,25 @@
+- name: Start AdGuard Home Sync
+  hosts: Rivendell
+  tasks:
+    - name: Start AdGuard Sync Docker container
+      community.docker.docker_container:
+        name: adguard-sync
+        image: linuxserver/adguardhome-sync:0.7.8
+        labels:
+          diun.enable: 'true'
+          diun.watch_repo: 'true'
+          diun.notify_on: new;update
+          diun.sort_tags: semver
+          diun.max_tags: '1'
+          diun.include_tags: '^\d+\.\d+\.\d+$'
+        env:
+          PUID: '1000'
+          PGID: '1000'
+          CONFIGFILE: /config/adguard_sync.yaml
+        restart_policy: unless-stopped
+        volumes:
+          - /data/adguard_sync.yaml:/config/adguard_sync.yaml:ro
+          - /etc/localtime:/etc/localtime:ro
+        network_mode: host
+        keep_volumes: false
+        state: started

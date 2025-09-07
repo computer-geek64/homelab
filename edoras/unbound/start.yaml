@@ -1,5 +1,5 @@
 - name: Start Unbound
-  hosts: Rivendell
+  hosts: Edoras
   tasks:
   - name: Read homelab config
     ansible.builtin.slurp:
@@ -17,7 +17,7 @@
       login_db: '{{homelab_config.database.name}}'
       query: 'SELECT config FROM service WHERE name = %s;'
       positional_args:
-      - unbound_rivendell
+      - unbound_edoras
     register: unbound_config_query
   - name: Set unbound_config variable
     ansible.builtin.set_fact:

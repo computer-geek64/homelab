@@ -1,0 +1,29 @@
+- name: Start AdGuard Home
+  hosts: Rivendell
+  tasks:
+    - name: Start AdGuard Docker container
+      community.docker.docker_container:
+        name: adguard
+        image: adguard/adguardhome:v0.107.65
+        labels:
+          autoheal: 'true'
+          diun.enable: 'true'
+          diun.watch_repo: 'true'
+          diun.notify_on: new;update
+          diun.sort_tags: semver
+          diun.max_tags: '1'
+          diun.include_tags: '^v\d+\.\d+\.\d+$'
+        healthcheck:
+          test: 'nslookup googleadservices.com localhost | grep -F "Address: 0.0.0.0"'
+          interval: 30s
+          retries: 3
+          start_period: 60s
+          timeout: 30s
+        restart_policy: unless-stopped
+        volumes:
+          - adguard-config:/opt/adguardhome/conf
+          - adguard-data:/opt/adguardhome/work
+          - /etc/localtime:/etc/localtime:ro
+        network_mode: host
+        keep_volumes: false
+        state: started

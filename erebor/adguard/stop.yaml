@@ -1,0 +1,7 @@
+- name: Stop AdGuard Home
+  hosts: Erebor
+  tasks:
+    - name: Stop AdGuard Docker container
+      community.docker.docker_container:
+        name: adguard
+        state: absent

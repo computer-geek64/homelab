@@ -81,4 +81,4 @@
       - '{{item.reverse_proxy}}'
       - '{{item.reverse_proxy_port}}'
     with_items:
-    - {service: unbound_erebor, port: 53, domain: null, reverse_proxy: null, reverse_proxy_port: null}
+    - {service: unbound_erebor, port: 54, domain: null, reverse_proxy: null, reverse_proxy_port: null}

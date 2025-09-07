@@ -1,0 +1,30 @@
+cron: 0 * * * *
+runOnStart: true
+continueOnError: false
+origin:
+  url: https://adguard-dsatp58.homelab.net
+  insecureSkipVerify: true
+  username: {{adguard_username}}
+  password: {{adguard_password}}
+replicas:
+  - url: https://adguard-edoras.homelab.net
+    username: {{adguard_username}}
+    password: {{adguard_password}}
+    insecureSkipVerify: true
+api:
+  port: 0
+features:
+  generalSettings: true
+  queryLogConfig: true
+  statsConfig: true
+  clientSettings: true
+  services: true
+  filters: true
+  theme: true
+  dhcp:
+    serverConfig: true
+    staticLeases: true
+  dns:
+    serverConfig: true
+    accessLists: true
+    rewrites: true

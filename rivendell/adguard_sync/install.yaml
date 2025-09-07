@@ -1,0 +1,43 @@
+- name: Install AdGuard Home Sync
+  hosts: Rivendell
+  vars_prompt:
+    - name: adguard_username
+      prompt: Enter AdGuard Home username
+    - name: adguard_password
+      prompt: Enter AdGuard Home password
+  tasks:
+    - name: Copy AdGuard Sync config file
+      become: true
+      ansible.builtin.template:
+        src: config.yaml
+        dest: /data/adguard_sync.yaml
+        owner: 1000
+        group: 1000
+
+    - name: Read homelab config
+      ansible.builtin.slurp:
+        src: '{{ansible_user_dir}}/.homelab.json'
+      register: homelab_config_file
+    - name: Set homelab_config variable
+      ansible.builtin.set_fact:
+        homelab_config: '{{homelab_config_file.content|b64decode|from_json}}'
+
+    - name: Insert into Postgres table service
+      vars:
+        adguard_sync_config:
+          adguard:
+            username: '{{adguard_username}}'
+            password: '{{adguard_password}}'
+      community.postgresql.postgresql_query:
+        login_host: '{{homelab_config.database.host}}'
+        login_user: '{{homelab_config.database.user}}'
+        login_password: '{{homelab_config.database.password}}'
+        login_db: '{{homelab_config.database.name}}'
+        query: 'INSERT INTO service (name, host, source, config) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING;'
+        positional_args:
+          - '{{item.name}}'
+          - '{{item.host}}'
+          - '{{item.source}}'
+          - '{{item.config}}'
+      with_items:
+        - {name: adguard_sync_dsatp58, host: '{{ansible_hostname}}', source: github/computer-geek64/homelab/master/rivendell/adguard_sync, config: '{{adguard_sync_config|to_json}}'}

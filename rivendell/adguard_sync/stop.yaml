@@ -1,0 +1,7 @@
+- name: Stop AdGuard Home Sync
+  hosts: Rivendell
+  tasks:
+    - name: Stop AdGuard Sync Docker container
+      community.docker.docker_container:
+        name: adguard-sync
+        state: absent

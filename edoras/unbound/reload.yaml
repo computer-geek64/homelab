@@ -1,0 +1,8 @@
+- name: Reload Unbound
+  hosts: Edoras
+  tasks:
+  - name: Restart Unbound Docker container
+    community.docker.docker_container:
+      name: unbound
+      restart: true
+      state: started
