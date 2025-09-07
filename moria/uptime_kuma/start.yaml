@@ -4,8 +4,16 @@
   - name: Start Uptime Kuma Docker container
     community.docker.docker_container:
       name: uptime-kuma
-      image: louislam/uptime-kuma:1.23.15
+      image: louislam/uptime-kuma:1.23.16
       restart_policy: unless-stopped
+      labels:
+        autoheal: 'true'
+        diun.enable: 'true'
+        diun.watch_repo: 'true'
+        diun.notify_on: new;update
+        diun.sort_tags: semver
+        diun.max_tags: '1'
+        diun.include_tags: '^\d+\.\d+\.\d+$'
       env:
         NODE_EXTRA_CA_CERTS: /certs/homelab_ca.crt
       volumes:
