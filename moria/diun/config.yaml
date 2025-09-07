@@ -1,0 +1,17 @@
+watch:
+  schedule: 0 9,21 * * *
+  jitter: 30s
+  firstCheckNotif: false
+  runOnStartup: true
+  healthchecks:
+    baseURL: https://healthchecks.homelab.net/ping/
+    uuid: 7098e0c0-75b6-4fb6-b35b-f174f7748a9c
+notif:
+  ntfy:
+    endpoint: https://ntfy.homelab.net
+    topic: diun
+    priority: 3
+    tags:
+      - whale
+providers:
+  docker: true

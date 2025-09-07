@@ -1,0 +1,7 @@
+- name: Stop Diun
+  hosts: Barad-dur
+  tasks:
+    - name: Stop Diun Docker container
+      community.docker.docker_container:
+        name: diun
+        state: absent

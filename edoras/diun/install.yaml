@@ -1,0 +1,24 @@
+- name: Install Diun
+  hosts: Edoras
+  tasks:
+    - name: Create Diun data Docker volume directory
+      become: true
+      ansible.builtin.file:
+        path: /data/diun-data
+        state: directory
+    - name: Create Diun data Docker volume
+      community.docker.docker_volume:
+        volume_name: diun-data
+        driver: local
+        driver_options:
+          type: none
+          o: bind
+          device: /data/diun-data
+        state: present
+
+    - name: Copy Diun config file
+      become: true
+      ansible.builtin.copy:
+        src: config.yaml
+        dest: /data/diun.yaml
+        mode: preserve

@@ -1,0 +1,21 @@
+- name: Stop Diun
+  ansible.builtin.import_playbook: stop.yaml
+
+- name: Uninstall Diun
+  hosts: Erebor
+  tasks:
+  - name: Remove Diun config file
+    become: true
+    ansible.builtin.file:
+      path: /data/diun.yaml
+      state: absent
+
+  - name: Remove Diun data Docker volume
+    community.docker.docker_volume:
+      volume_name: diun-data
+      state: absent
+  - name: Remove Diun data Docker volume directory
+    become: true
+    ansible.builtin.file:
+      path: /data/diun-data
+      state: absent

@@ -1,0 +1,23 @@
+- name: Start Diun
+  hosts: Barad-dur
+  tasks:
+    - name: Start Diun Docker container
+      community.docker.docker_container:
+        name: diun
+        image: crazymax/diun:4.30.0
+        labels:
+          diun.enable: 'true'
+          diun.watch_repo: 'true'
+          diun.notify_on: new;update
+          diun.sort_tags: semver
+          diun.max_tags: '1'
+          diun.include_tags: '^\d+\.\d+\.\d+$'
+        command: 'serve --config /config/diun.yaml'
+        restart_policy: unless-stopped
+        volumes:
+          - /data/diun.yaml:/config/diun.yaml:ro
+          - /var/run/docker.sock:/var/run/docker.sock
+          - /data/certs/homelab_ca.crt:/etc/ssl/certs/homelab_ca.crt:ro
+          - /etc/localtime:/etc/localtime:ro
+        keep_volumes: false
+        state: started
