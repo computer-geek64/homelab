@@ -1,0 +1,32 @@
+- name: Stop Unbound
+  ansible.builtin.import_playbook: stop.yaml
+
+- name: Uninstall Unbound
+  hosts: Lothlorien
+  tasks:
+  - name: Read homelab config
+    ansible.builtin.slurp:
+      src: '{{ansible_user_dir}}/.homelab.json'
+    register: homelab_config_file
+  - name: Set homelab_config variable
+    ansible.builtin.set_fact:
+      homelab_config: '{{homelab_config_file.content|b64decode|from_json}}'
+
+  - name: Delete from Postgres table service_port
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      login_db: '{{homelab_config.database.name}}'
+      query: 'DELETE FROM service_port WHERE service = %s;'
+      positional_args:
+      - unbound_lothlorien
+  - name: Delete from Postgres table service
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      login_db: '{{homelab_config.database.name}}'
+      query: 'DELETE FROM service WHERE name = %s;'
+      positional_args:
+      - unbound_lothlorien

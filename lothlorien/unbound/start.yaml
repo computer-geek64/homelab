@@ -1,0 +1,39 @@
+- name: Start Unbound
+  hosts: Lothlorien
+  tasks:
+  - name: Read homelab config
+    ansible.builtin.slurp:
+      src: '{{ansible_user_dir}}/.homelab.json'
+    register: homelab_config_file
+  - name: Set homelab_config variable
+    ansible.builtin.set_fact:
+      homelab_config: '{{homelab_config_file.content|b64decode|from_json}}'
+
+  - name: Get Unbound config
+    community.postgresql.postgresql_query:
+      login_host: '{{homelab_config.database.host}}'
+      login_user: '{{homelab_config.database.user}}'
+      login_password: '{{homelab_config.database.password}}'
+      login_db: '{{homelab_config.database.name}}'
+      query: 'SELECT config FROM service WHERE name = %s;'
+      positional_args:
+      - unbound_lothlorien
+    register: unbound_config_query
+  - name: Set unbound_config variable
+    ansible.builtin.set_fact:
+      unbound_config: '{{unbound_config_query.query_result[0].config}}'
+
+  - name: Start Unbound Docker container
+    community.docker.docker_container:
+      name: unbound
+      image: unbound:latest
+      restart_policy: unless-stopped
+      env:
+        NETWORK: Tolkien
+        POSTGRES_HOST: '{{homelab_config.database.host}}'
+        POSTGRES_DNS_PASSWORD: '{{unbound_config.postgres.password}}'
+      volumes:
+      - /etc/localtime:/etc/localtime:ro
+      network_mode: host
+      keep_volumes: false
+      state: started
