@@ -4,7 +4,7 @@
     - name: Start AdGuard Sync Docker container
       community.docker.docker_container:
         name: adguard-sync
-        image: linuxserver/adguardhome-sync:0.7.8
+        image: linuxserver/adguardhome-sync:0.8.1
         labels:
           diun.enable: 'true'
           diun.watch_repo: 'true'
