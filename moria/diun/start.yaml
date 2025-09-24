@@ -14,6 +14,7 @@
           diun.include_tags: '^\d+\.\d+\.\d+$'
         command: 'serve --config /config/diun.yaml'
         restart_policy: unless-stopped
+        hostname: '{{ansible_hostname}}'
         volumes:
           - /data/diun.yaml:/config/diun.yaml:ro
           - /var/run/docker.sock:/var/run/docker.sock
