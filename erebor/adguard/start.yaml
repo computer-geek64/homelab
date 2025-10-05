@@ -4,7 +4,7 @@
     - name: Start AdGuard Docker container
       community.docker.docker_container:
         name: adguard
-        image: adguard/adguardhome:v0.107.66
+        image: adguard/adguardhome:v0.107.67
         labels:
           autoheal: 'true'
           diun.enable: 'true'
