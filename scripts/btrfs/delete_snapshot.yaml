@@ -1,0 +1,12 @@
+- name: Delete Btrfs Snapshot
+  hosts: all
+  vars_prompt:
+    - name: snapshot
+      prompt: Enter path to snapshot
+      private: false
+  tasks:
+    - name: Delete Btrfs Snapshot
+      become: true
+      ansible.builtin.command:
+        cmd: 'btrfs subvolume delete {{snapshot}}'
+        removes: '{{snapshot}}'

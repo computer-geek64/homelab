@@ -1,0 +1,15 @@
+- name: Create Btrfs Snapshot
+  hosts: all
+  vars_prompt:
+    - name: subvolume
+      prompt: Enter path to subvolume
+      private: false
+    - name: snapshot
+      prompt: Enter path to snapshot
+      private: false
+  tasks:
+    - name: Create Btrfs Snapshot of specified subvolume
+      become: true
+      ansible.builtin.command:
+        cmd: 'btrfs subvolume snapshot -r {{subvolume}} {{snapshot}}'
+        creates: '{{snapshot}}'
