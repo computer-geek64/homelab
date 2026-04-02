@@ -52,6 +52,7 @@ class WireguardHost:
             print('ListenPort = ' + WIREGUARD_ENDPOINT.rsplit(':', 1)[-1])
         else:
             print(f'DNS = {DNS}')
+        print(f'MTU = 1360')
 
         for peer in self.peers:
             name = peer.pop('name')
