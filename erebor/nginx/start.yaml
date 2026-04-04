@@ -1,17 +1,24 @@
 - name: Start Nginx
   hosts: Erebor
   tasks:
-  - name: Start Nginx Docker container
-    community.docker.docker_container:
-      name: nginx
-      image: nginx:1.29.8
-      restart_policy: unless-stopped
-      volumes:
-      - /data/nginx.conf:/etc/nginx/nginx.conf:ro
-      - nginx-config:/etc/nginx/conf.d:ro
-      - nginx-static:/srv/http:ro
-      - /data/certs:/certs:ro
-      - /etc/localtime:/etc/localtime:ro
-      network_mode: host
-      keep_volumes: false
-      state: started
+    - name: Start Nginx Docker container
+      community.docker.docker_container:
+        name: nginx
+        image: nginx:1.29.8
+        labels:
+          diun.enable: 'true'
+          diun.watch_repo: 'true'
+          diun.notify_on: new;update
+          diun.sort_tags: semver
+          diun.max_tags: '1'
+          diun.include_tags: '^\d+\.\d+\.\d+$'
+        restart_policy: unless-stopped
+        volumes:
+          - /data/nginx.conf:/etc/nginx/nginx.conf:ro
+          - nginx-config:/etc/nginx/conf.d:ro
+          - nginx-static:/srv/http:ro
+          - /data/certs:/certs:ro
+          - /etc/localtime:/etc/localtime:ro
+        network_mode: host
+        keep_volumes: false
+        state: started
