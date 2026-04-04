@@ -13,5 +13,12 @@ notif:
     priority: 3
     tags:
       - whale
+  webhook:
+    endpoint: https://diun.homelab.net/webhook
+    method: POST
+    headers:
+      content-type: application/json
+      authorization: diun
+    timeout: 10s
 providers:
   docker: true
