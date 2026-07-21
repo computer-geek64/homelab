@@ -22,7 +22,7 @@
 
     - name: Read homelab config
       ansible.builtin.slurp:
-        src: '{{ansible_user_dir}}/.homelab.json'
+        src: '{{ansible_facts["user_dir"]}}/.homelab.json'
       register: homelab_config_file
     - name: Set homelab_config variable
       ansible.builtin.set_fact:
@@ -33,7 +33,7 @@
         login_host: '{{homelab_config.database.host}}'
         login_user: '{{homelab_config.database.user}}'
         login_password: '{{homelab_config.database.password}}'
-        db: '{{homelab_config.database.name}}'
+        login_db: '{{homelab_config.database.name}}'
         query: 'DELETE FROM service_data WHERE service = %s;'
         positional_args:
           - uptime_kuma
@@ -42,7 +42,7 @@
         login_host: '{{homelab_config.database.host}}'
         login_user: '{{homelab_config.database.user}}'
         login_password: '{{homelab_config.database.password}}'
-        db: '{{homelab_config.database.name}}'
+        login_db: '{{homelab_config.database.name}}'
         query: 'DELETE FROM service_port WHERE service = %s;'
         positional_args:
           - uptime_kuma
@@ -51,7 +51,7 @@
         login_host: '{{homelab_config.database.host}}'
         login_user: '{{homelab_config.database.user}}'
         login_password: '{{homelab_config.database.password}}'
-        db: '{{homelab_config.database.name}}'
+        login_db: '{{homelab_config.database.name}}'
         query: 'DELETE FROM service WHERE name = %s;'
         positional_args:
           - uptime_kuma
