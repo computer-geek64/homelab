@@ -4,7 +4,7 @@
     - name: Start Diun Docker container
       community.docker.docker_container:
         name: diun
-        image: crazymax/diun:4.31.0
+        image: crazymax/diun:4.33.0
         labels:
           diun.enable: 'true'
           diun.watch_repo: 'true'
