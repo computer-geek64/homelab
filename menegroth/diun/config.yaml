@@ -1,0 +1,24 @@
+watch:
+  schedule: 0 9,21 * * *
+  jitter: 30s
+  firstCheckNotif: false
+  runOnStartup: true
+  healthchecks:
+    baseURL: https://healthchecks.homelab.net/ping/
+    uuid: cb72e977-7c21-4281-8c1a-11ce7b0aa484
+notif:
+  ntfy:
+    endpoint: https://ntfy.homelab.net
+    topic: diun
+    priority: 3
+    tags:
+      - whale
+  webhook:
+    endpoint: https://diun.homelab.net/webhook
+    method: POST
+    headers:
+      content-type: application/json
+      authorization: diun
+    timeout: 10s
+providers:
+  docker: true

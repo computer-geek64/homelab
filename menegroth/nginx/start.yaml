@@ -1,0 +1,30 @@
+- name: Start Nginx
+  hosts: Menegroth
+  tasks:
+    - name: Start Nginx Docker container
+      become: true
+      become_user: ashish
+      community.docker.docker_container:
+        name: nginx
+        image: nginx:1.31.3
+        labels:
+          diun.enable: 'true'
+          diun.watch_repo: 'true'
+          diun.notify_on: new;update
+          diun.sort_tags: semver
+          diun.max_tags: '1'
+          diun.include_tags: '^\d+\.\d+\.\d+$'
+        restart_policy: unless-stopped
+        volumes:
+          - /System/Volumes/Data/data/nginx.conf:/etc/nginx/nginx.conf:ro
+          - nginx-config:/etc/nginx/conf.d:ro
+          - nginx-static:/srv/http:ro
+          - /System/Volumes/Data/data/certs:/certs:ro
+          - /etc/localtime:/etc/localtime:ro
+        published_ports:
+          - 80:80
+          - 80:80/udp
+          - 443:443
+          - 443:443/udp
+        keep_volumes: false
+        state: started

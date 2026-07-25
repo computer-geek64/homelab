@@ -1,0 +1,8 @@
+- name: Stop Autoheal
+  hosts: Menegroth
+  tasks:
+    - name: Stop Autoheal Docker container
+      become: true
+      community.docker.docker_container:
+        name: autoheal
+        state: absent

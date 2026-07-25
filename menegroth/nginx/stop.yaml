@@ -1,0 +1,9 @@
+- name: Stop Nginx
+  hosts: Menegroth
+  tasks:
+    - name: Stop Nginx Docker container
+      become: true
+      become_user: ashish
+      community.docker.docker_container:
+        name: nginx
+        state: absent

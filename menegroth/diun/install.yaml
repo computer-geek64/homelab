@@ -1,0 +1,28 @@
+- name: Install Diun
+  hosts: Menegroth
+  tasks:
+    - name: Create Diun data Docker volume directory
+      become: true
+      become_user: ashish
+      ansible.builtin.file:
+        path: /System/Volumes/Data/data/diun-data
+        state: directory
+    - name: Create Diun data Docker volume
+      become: true
+      become_user: ashish
+      community.docker.docker_volume:
+        volume_name: diun-data
+        driver: local
+        driver_options:
+          type: none
+          o: bind
+          device: /System/Volumes/Data/data/diun-data
+        state: present
+
+    - name: Copy Diun config file
+      become: true
+      become_user: ashish
+      ansible.builtin.copy:
+        src: config.yaml
+        dest: /System/Volumes/Data/data/diun.yaml
+        mode: preserve

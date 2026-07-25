@@ -1,0 +1,9 @@
+- name: Reload Nginx
+  hosts: Menegroth
+  tasks:
+    - name: Reload Nginx inside Docker container
+      become: true
+      become_user: ashish
+      community.docker.docker_container_exec:
+        container: nginx
+        command: nginx -s reload

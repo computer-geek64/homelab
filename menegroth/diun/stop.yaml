@@ -1,0 +1,9 @@
+- name: Stop Diun
+  hosts: Menegroth
+  tasks:
+    - name: Stop Diun Docker container
+      become: true
+      become_user: ashish
+      community.docker.docker_container:
+        name: diun
+        state: absent
