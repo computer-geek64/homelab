@@ -3,7 +3,7 @@
 services:
   gitea:
     container_name: gitea
-    image: gitea/gitea:1.21.10
+    image: gitea/gitea:28.4.0
     depends_on:
       - postgres
     restart: unless-stopped
@@ -17,6 +17,7 @@ services:
       GITEA__server__ROOT_URL: https://gitea.homelab.net
       GITEA__server__OFFLINE_MODE: 'true'
       GITEA__server__DISABLE_SSH: 'true'
+      GITEA__server__PUBLIC_URL_DETECTION: auto
       GITEA__mailer__ENABLED: 'true'
       GITEA__mailer__SMTP_ADDR: ${SMTP_ADDRESS}
       GITEA__mailer__SMTP_PORT: ${SMTP_PORT}
@@ -24,9 +25,10 @@ services:
       GITEA__mailer__PASSWD: ${SMTP_PASSWORD}
       GITEA__mailer__FROM: ${SMTP_FROM_ADDRESS}
       GITEA__repository__DEFAULT_BRANCH: master
-      GITEA__webhook__ALLOWED_HOST_LIST: '*'
       GITEA__webhook__SKIP_TLS_VERIFY: 'true'
-      APP_NAME: Gitea
+      GITEA__security__ALLOWED_HOST_LIST: private
+      GITEA__security__EGRESS_MODE: lax
+      GITEA____APP_NAME: Gitea
     volumes:
       - type: volume
         source: gitea-data
