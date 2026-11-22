@@ -5,7 +5,7 @@ services:
     container_name: gitea
     image: gitea/gitea:1.21.10
     depends_on:
-    - postgres
+      - postgres
     restart: unless-stopped
     environment:
       GITEA__database__DB_TYPE: postgres
@@ -28,17 +28,17 @@ services:
       GITEA__webhook__SKIP_TLS_VERIFY: 'true'
       APP_NAME: Gitea
     volumes:
-    - type: volume
-      source: gitea-data
-      target: /data
-    - type: bind
-      source: /etc/localtime
-      target: /etc/localtime
-      read_only: true
+      - type: volume
+        source: gitea-data
+        target: /data
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
     networks:
-    - gitea
+      - gitea
     ports:
-    - 127.0.0.1:10003:10003
+      - 127.0.0.1:10003:10003
   postgres:
     container_name: gitea-postgres
     image: postgres:15.2
@@ -48,15 +48,15 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: gitea
     volumes:
-    - type: volume
-      source: postgres-data
-      target: /var/lib/postgresql/data
-    - type: bind
-      source: /etc/localtime
-      target: /etc/localtime
-      read_only: true
+      - type: volume
+        source: postgres-data
+        target: /var/lib/postgresql/data
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
     networks:
-    - gitea
+      - gitea
 
 volumes:
   gitea-data:
@@ -71,6 +71,6 @@ networks:
     name: gitea
     ipam:
       config:
-      - subnet: 172.19.0.0/24
-        ip_range: 172.19.0.0/24
-        gateway: 172.19.0.1
+        - subnet: 172.19.0.0/24
+          ip_range: 172.19.0.0/24
+          gateway: 172.19.0.1
