@@ -6,7 +6,7 @@
       become_user: ashish
       community.docker.docker_container:
         name: nginx
-        image: nginx:1.31.3
+        image: nginx:1.31.10
         labels:
           diun.enable: 'true'
           diun.watch_repo: 'true'
